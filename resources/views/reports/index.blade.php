@@ -50,18 +50,7 @@
                     <div class="row mb-4">
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Class</label>
-                            <select name="class_id" id="classFilter" class="form-select">
-                                <option value="">All Classes</option>
-                                @foreach($classes as $class)
-                                <option value="{{ $class->id }}">{{ $class->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Stream</label>
-                            <select name="stream_id" id="streamFilter" class="form-select">
-                                <option value="">All Streams</option>
-                            </select>
+                            <input type="text" name="class_name" class="form-control" placeholder="e.g. Form I">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Payment Category</label>
@@ -99,6 +88,9 @@
                     <!-- Action Buttons -->
                     <div class="row">
                         <div class="col-12">
+                            <a href="{{ route('reports.unpaid') }}" class="btn btn-outline-dark me-2">
+                                <i class="bi bi-exclamation-triangle me-2"></i>Unpaid/Overdue Report
+                            </a>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-search me-2"></i>Generate Report
                             </button>
@@ -130,8 +122,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const dateRange = document.getElementById('dateRange');
     const customDateRange = document.getElementById('customDateRange');
-    const classFilter = document.getElementById('classFilter');
-    const streamFilter = document.getElementById('streamFilter');
 
     // Show/hide custom date range
     dateRange.addEventListener('change', function() {
@@ -146,28 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Load streams when class changes
-    classFilter.addEventListener('change', function() {
-        const classId = this.value;
-        
-        // Clear existing options
-        streamFilter.innerHTML = '<option value="">All Streams</option>';
-        
-        if (classId) {
-            fetch(`/api/classes/${classId}/streams`)
-                .then(response => response.json())
-                .then(streams => {
-                    streams.forEach(stream => {
-                        const option = document.createElement('option');
-                        option.value = stream.id;
-                        option.textContent = stream.name;
-                        streamFilter.appendChild(option);
-                    });
-                })
-                .catch(error => console.error('Error loading streams:', error));
-        }
-    });
-
     // Set today's date as default for custom range
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('startDate').value = today;
@@ -177,7 +145,6 @@ document.addEventListener('DOMContentLoaded', function() {
 function resetForm() {
     document.getElementById('reportForm').reset();
     document.getElementById('customDateRange').style.display = 'none';
-    document.getElementById('streamFilter').innerHTML = '<option value="">All Streams</option>';
 }
 </script>
 @endpush

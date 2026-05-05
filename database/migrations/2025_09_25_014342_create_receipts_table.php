@@ -11,8 +11,7 @@ return new class extends Migration {
             $table->id();
             $table->string('receipt_no')->unique();
             $table->string('student_name');
-            $table->foreignId('class_id')->constrained('classes')->restrictOnDelete();
-            $table->foreignId('stream_id')->constrained('streams')->restrictOnDelete();
+            $table->string('class_name')->nullable();
             $table->unsignedBigInteger('amount'); // store in TZS (no decimals)
             $table->date('payment_date');
             $table->enum('payment_mode', ['Cash', 'Bank', 'Mobile Money', 'Other']);

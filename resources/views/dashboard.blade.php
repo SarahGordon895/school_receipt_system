@@ -4,37 +4,37 @@
 @section('content')
 <div class="row g-3">
   {{-- KPI Cards --}}
-  <div class="col-12 col-md-3">
-    <div class="card h-100">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card h-100 stat-card-school">
       <div class="card-body">
-        <div class="text-muted small">Total Collected</div>
-        <div class="fs-4 fw-semibold mt-1">Tsh {{ $metrics['total_collected'] }}</div>
+        <div class="text-muted small text-uppercase fw-semibold" style="font-size:0.7rem;letter-spacing:0.06em;">Total Collected</div>
+        <div class="fs-4 fw-bold mt-2 stat-value text-school-primary">Tsh {{ $metrics['total_collected'] }}</div>
       </div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="card h-100">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card h-100 stat-card-school">
       <div class="card-body">
-        <div class="text-muted small">Today (Amount)</div>
-        <div class="fs-4 fw-semibold mt-1">Tsh {{ $metrics['today_total'] }}</div>
-        <div class="small text-muted">{{ $metrics['today_count'] }} receipts</div>
+        <div class="text-muted small text-uppercase fw-semibold" style="font-size:0.7rem;letter-spacing:0.06em;">Today (Amount)</div>
+        <div class="fs-4 fw-bold mt-2 stat-value text-school-primary">Tsh {{ $metrics['today_total'] }}</div>
+        <div class="small text-muted mt-1">{{ $metrics['today_count'] }} receipts</div>
       </div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="card h-100">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card h-100 stat-card-school">
       <div class="card-body">
-        <div class="text-muted small">This Month (Amount)</div>
-        <div class="fs-4 fw-semibold mt-1">Tsh {{ $metrics['month_total'] }}</div>
-        <div class="small text-muted">{{ $metrics['month_count'] }} receipts</div>
+        <div class="text-muted small text-uppercase fw-semibold" style="font-size:0.7rem;letter-spacing:0.06em;">This Month (Amount)</div>
+        <div class="fs-4 fw-bold mt-2 stat-value text-school-primary">Tsh {{ $metrics['month_total'] }}</div>
+        <div class="small text-muted mt-1">{{ $metrics['month_count'] }} receipts</div>
       </div>
     </div>
   </div>
-  <div class="col-12 col-md-3">
-    <div class="card h-100">
-      <div class="card-body">
-        <div class="text-muted small">Quick Actions</div>
-        <div class="d-grid mt-2">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card h-100 border-primary-subtle">
+      <div class="card-body d-flex flex-column">
+        <div class="text-muted small text-uppercase fw-semibold" style="font-size:0.7rem;letter-spacing:0.06em;">Quick Actions</div>
+        <div class="d-grid mt-auto pt-3">
           <a href="{{ route('receipts.create') }}" class="btn btn-primary">
             <i class="bi bi-receipt-cutoff me-1"></i> Generate Receipt
           </a>
@@ -74,7 +74,7 @@
       <div class="card-body">
         @forelse($topClasses as $row)
           <div class="d-flex justify-content-between py-1 border-bottom">
-            <div class="fw-semibold">{{ $row->classRoom->name ?? '—' }}</div>
+            <div class="fw-semibold">{{ $row->class_name ?? '—' }}</div>
             <div>Tsh {{ number_format($row->s ?? 0) }}</div>
           </div>
         @empty
@@ -101,7 +101,7 @@
                 <tr>
                   <td><a href="{{ route('receipts.show',$r) }}" class="text-decoration-none">{{ $r->receipt_no }}</a></td>
                   <td>{{ $r->student_name }}</td>
-                  <td>{{ $r->classRoom->name ?? '' }}/{{ $r->stream->name ?? '' }}</td>
+                  <td>{{ $r->class_name ?? '' }}</td>
                   <td>Tsh {{ number_format($r->amount) }}</td>
                 </tr>
               @empty

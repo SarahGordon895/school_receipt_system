@@ -1,0 +1,284 @@
+/**
+ * Mbonea Secondary School — Receipt System UI theme
+ * Complements Bootstrap 5; variables used for consistent branding.
+ */
+:root {
+  --school-primary: #0f3d2e;
+  --school-primary-hover: #164a3a;
+  --school-primary-soft: rgba(15, 61, 46, 0.08);
+  --school-accent: #b8860b;
+  --school-accent-soft: rgba(184, 134, 11, 0.12);
+  --school-surface: #f0f4f2;
+  --school-surface-elevated: #ffffff;
+  --school-border: rgba(15, 61, 46, 0.12);
+  --school-text: #1a2e28;
+  --school-muted: #5c6d66;
+  --school-radius: 0.65rem;
+  --school-radius-sm: 0.45rem;
+  --school-shadow: 0 1px 2px rgba(15, 45, 35, 0.06);
+  --school-shadow-md: 0 4px 14px rgba(15, 45, 35, 0.08);
+  --navbar-h: 3.75rem;
+}
+
+body.school-app-body {
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--school-text);
+  background: var(--school-surface);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ——— Top bar ——— */
+.navbar-school {
+  min-height: var(--navbar-h);
+  background: linear-gradient(135deg, var(--school-surface-elevated) 0%, #fafcfb 100%) !important;
+  border-bottom: 1px solid var(--school-border) !important;
+  box-shadow: var(--school-shadow);
+}
+
+.navbar-school .navbar-brand {
+  color: var(--school-primary) !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  max-width: min(52vw, 14rem);
+}
+
+@media (min-width: 576px) {
+  .navbar-school .navbar-brand {
+    max-width: none;
+  }
+}
+
+.navbar-school .btn-primary {
+  --bs-btn-bg: var(--school-primary);
+  --bs-btn-border-color: var(--school-primary);
+  --bs-btn-hover-bg: var(--school-primary-hover);
+  --bs-btn-hover-border-color: var(--school-primary-hover);
+  --bs-btn-active-bg: var(--school-primary-hover);
+  --bs-btn-active-border-color: var(--school-primary-hover);
+  font-weight: 600;
+  border-radius: var(--school-radius-sm);
+}
+
+.navbar-school .btn-outline-secondary {
+  border-radius: var(--school-radius-sm);
+  font-weight: 500;
+}
+
+/* ——— Sidebar ——— */
+.sidebar-school {
+  width: 16.25rem;
+  background: var(--school-surface-elevated);
+  border-right: 1px solid var(--school-border);
+  position: fixed;
+  top: var(--navbar-h);
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
+  z-index: 1035;
+  box-shadow: var(--school-shadow);
+}
+
+.sidebar-school .nav-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--school-muted);
+}
+
+.sidebar-school .list-group-item {
+  border: none;
+  border-radius: var(--school-radius-sm) !important;
+  margin-bottom: 0.2rem;
+  padding: 0.65rem 0.85rem;
+  color: var(--school-text);
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-school .list-group-item:hover {
+  background: var(--school-primary-soft);
+  color: var(--school-primary);
+}
+
+.sidebar-school .list-group-item.active {
+  background: var(--school-primary);
+  color: #fff;
+}
+
+.sidebar-school .list-group-item.active i {
+  opacity: 1;
+}
+
+.sidebar-school .list-group-item i {
+  opacity: 0.85;
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: var(--navbar-h);
+  background: rgba(15, 40, 32, 0.35);
+  z-index: 1030;
+  backdrop-filter: blur(2px);
+}
+
+.sidebar-backdrop.show {
+  display: block;
+}
+
+/* ——— Main content ——— */
+.school-main {
+  margin-left: 16.25rem;
+  padding: calc(var(--navbar-h) + 1.25rem) 1.25rem 2rem;
+  max-width: 100%;
+}
+
+@media (max-width: 991.98px) {
+  .sidebar-school {
+    left: -17rem;
+    transition: left 0.28s ease;
+    box-shadow: var(--school-shadow-md);
+  }
+
+  .sidebar-school.show {
+    left: 0;
+  }
+
+  .school-main {
+    margin-left: 0;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* ——— Page title ——— */
+.page-title-school {
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  font-weight: 700;
+  color: var(--school-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+/* ——— Cards ——— */
+.school-app-body .card {
+  border: 1px solid var(--school-border);
+  border-radius: var(--school-radius);
+  box-shadow: var(--school-shadow);
+  background: var(--school-surface-elevated);
+}
+
+.school-app-body .card-header {
+  background: linear-gradient(180deg, rgba(15, 61, 46, 0.04) 0%, transparent 100%);
+  border-bottom: 1px solid var(--school-border);
+  font-weight: 600;
+  color: var(--school-primary);
+  border-radius: var(--school-radius) var(--school-radius) 0 0 !important;
+}
+
+.stat-card-school {
+  border-left: 4px solid var(--school-accent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card-school:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--school-shadow-md);
+}
+
+.stat-card-school .text-muted {
+  color: var(--school-muted) !important;
+}
+
+.stat-card-school .stat-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--school-primary);
+}
+
+.text-school-primary {
+  color: var(--school-primary) !important;
+}
+
+/* ——— Tables ——— */
+.school-app-body .table {
+  --bs-table-hover-bg: var(--school-primary-soft);
+}
+
+.school-app-body .table thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--school-muted);
+  border-bottom-width: 1px;
+  white-space: nowrap;
+}
+
+.school-app-body .table-responsive {
+  border-radius: 0 0 var(--school-radius) var(--school-radius);
+}
+
+/* ——— Forms ——— */
+.school-app-body .form-control:focus,
+.school-app-body .form-select:focus {
+  border-color: var(--school-primary);
+  box-shadow: 0 0 0 0.2rem var(--school-primary-soft);
+}
+
+.school-app-body .btn-primary {
+  --bs-btn-bg: var(--school-primary);
+  --bs-btn-border-color: var(--school-primary);
+  --bs-btn-hover-bg: var(--school-primary-hover);
+  --bs-btn-hover-border-color: var(--school-primary-hover);
+  font-weight: 600;
+}
+
+.school-app-body .btn-outline-primary {
+  --bs-btn-color: var(--school-primary);
+  --bs-btn-border-color: var(--school-primary);
+  --bs-btn-hover-bg: var(--school-primary);
+  --bs-btn-hover-border-color: var(--school-primary);
+}
+
+.school-app-body .progress {
+  height: 0.45rem;
+  border-radius: 50rem;
+  background: var(--school-primary-soft);
+}
+
+.school-app-body .progress-bar {
+  background: linear-gradient(90deg, var(--school-primary), #1a5c47);
+}
+
+/* ——— Alerts ——— */
+.school-app-body .alert-success {
+  border-radius: var(--school-radius-sm);
+  border: 1px solid rgba(25, 135, 84, 0.25);
+}
+
+.school-app-body .alert-danger {
+  border-radius: var(--school-radius-sm);
+}
+
+/* ——— Pagination ——— */
+.school-app-body .pagination .page-link {
+  border-radius: var(--school-radius-sm);
+  margin: 0 0.15rem;
+  color: var(--school-primary);
+  border-color: var(--school-border);
+}
+
+.school-app-body .pagination .page-item.active .page-link {
+  background: var(--school-primary);
+  border-color: var(--school-primary);
+}
+
+/* ——— Badges ——— */
+.school-app-body .badge.text-bg-light {
+  background: var(--school-accent-soft) !important;
+  color: var(--school-primary) !important;
+  font-weight: 600;
+}

@@ -9,12 +9,22 @@ class SettingSeeder extends Seeder
 {
     public function run(): void
     {
-        Setting::query()->firstOrCreate([], [
-            'school_name' => 'Promentis Academy',
-            'contact_phone' => '+255700000000',
-            'contact_email' => 'admin@school.tz',
-            'address' => 'Dar es Salaam, Tanzania',
-            'reg_number' => 'REG-001',
+        $setting = Setting::query()->first();
+
+        if (!$setting) {
+            Setting::query()->create([
+                'school_name' => 'Mbonea Secondary School',
+                'contact_phone' => '+255700000000',
+                'contact_email' => 'admin@mbonea.sc.tz',
+                'address' => 'Tanzania',
+                'reg_number' => 'REG-001',
+            ]);
+            return;
+        }
+
+        $setting->update([
+            'school_name' => 'Mbonea Secondary School',
+            'contact_email' => 'admin@mbonea.sc.tz',
         ]);
     }
 }

@@ -32,12 +32,25 @@
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
-          <tr><th>Name</th><th class="text-end">Actions</th></tr>
+          <tr><th>Student</th><th>Class</th><th>Parent Contact</th><th class="text-end">Balance</th><th class="text-end">Actions</th></tr>
         </thead>
         <tbody>
           @forelse($students as $s)
             <tr>
-              <td class="fw-semibold">{{ $s->name }}</td>
+              <td>
+                <div class="fw-semibold">{{ $s->name }}</div>
+                <div class="small text-muted">{{ $s->admission_no ?? 'No admission no' }}</div>
+              </td>
+              <td>{{ $s->class_name ?? '—' }}</td>
+              <td>
+                <div>{{ $s->parent_name ?? 'N/A' }}</div>
+                <div class="small text-muted">{{ $s->parent_phone ?? 'No phone' }}{{ $s->parent_email ? ' • '.$s->parent_email : '' }}</div>
+              </td>
+              <td class="text-end">
+                <span class="{{ $s->balance > 0 ? 'text-danger fw-semibold' : 'text-success fw-semibold' }}">
+                  Tsh {{ number_format($s->balance) }}
+                </span>
+              </td>
               <td class="text-end">
                 <a href="{{ route('students.edit',$s) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
                 <form action="{{ route('students.destroy',$s) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete student?')">
@@ -47,7 +60,7 @@
               </td>
             </tr>
           @empty
-            <tr><td colspan="2" class="text-center text-muted py-4">No students yet.</td></tr>
+            <tr><td colspan="4" class="text-center text-muted py-4">No students yet.</td></tr>
           @endforelse
         </tbody>
       </table>

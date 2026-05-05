@@ -79,9 +79,12 @@
                                 <div class="fs-5 fw-semibold">{{ $receipt->student_name }}</div>
                             </div>
                             <div class="mb-2">
-                                <span class="text-muted small">Class / Stream</span>
-                                <div class="fw-semibold">{{ $receipt->classRoom->name ?? '' }} /
-                                    {{ $receipt->stream->name ?? '' }}</div>
+                                <span class="text-muted small">Class</span>
+                                <div>{{ $receipt->class_name ?? '—' }}</div>
+                            </div>
+                            <div class="mb-2">
+                                <span class="text-muted small">Class</span>
+                                <div class="fw-semibold">{{ $receipt->class_name ?? '—' }}</div>
                             </div>
                             @if ($receipt->note)
                                 <div class="mb-2">
@@ -151,8 +154,7 @@
 
             <div class="tr-section">
                 <div class="tr-row"><span>Student</span><span>{{ $receipt->student_name }}</span></div>
-                <div class="tr-row"><span>Class/Stream</span><span>{{ $receipt->classRoom->name ?? '' }} /
-                        {{ $receipt->stream->name ?? '' }}</span></div>
+                <div class="tr-row"><span>Class</span><span>{{ $receipt->class_name ?? '—' }}</span></div>
             </div>
             
 

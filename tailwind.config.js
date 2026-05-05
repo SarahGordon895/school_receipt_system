@@ -12,7 +12,16 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['DM Sans', 'Figtree', ...defaultTheme.fontFamily.sans],
+            },
+            colors: {
+                school: {
+                    primary: '#0f3d2e',
+                    'primary-hover': '#164a3a',
+                    accent: '#b8860b',
+                    surface: '#f0f4f2',
+                    muted: '#5c6d66',
+                },
             },
         },
     },

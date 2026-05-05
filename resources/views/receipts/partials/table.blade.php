@@ -12,7 +12,7 @@
           <tr>
             <th>Receipt #</th>
             <th>Student</th>
-            <th>Class / Stream</th>
+            <th>Class</th>
             <th>Amount</th>
             <th>Date</th>
             <th>Mode</th>
@@ -25,7 +25,7 @@
             <tr>
               <td class="fw-semibold">{{ $r->receipt_no }}</td>
               <td>{{ $r->student_name }}</td>
-              <td>{{ $r->classRoom->name ?? '' }} / {{ $r->stream->name ?? '' }}</td>
+              <td>{{ $r->class_name ?? '—' }}</td>
               <td>Tsh {{ number_format($r->amount) }}</td>
               <td>{{ \Illuminate\Support\Carbon::parse($r->payment_date)->toDateString() }}</td>
               <td>{{ $r->payment_mode }}</td>

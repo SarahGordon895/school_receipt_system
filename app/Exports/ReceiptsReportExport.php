@@ -25,7 +25,7 @@ class ReceiptsReportExport implements FromCollection, WithHeadings, WithMapping,
 
     public function collection()
     {
-        $query = Receipt::with(['classRoom', 'stream', 'paymentCategories', 'user']);
+        $query = Receipt::with(['paymentCategories', 'user']);
 
         // Apply date range filter
         $dateRange = $this->request['date_range'];
@@ -39,9 +39,8 @@ class ReceiptsReportExport implements FromCollection, WithHeadings, WithMapping,
         }
 
         // Apply other filters
-        $query->when($this->request['class_id'] ?? null, fn($q) => $q->where('class_id', $this->request['class_id']))
-              ->when($this->request['stream_id'] ?? null, fn($q) => $q->where('stream_id', $this->request['stream_id']))
-              ->when($this->request['payment_category_id'] ?? null, fn($q) => $q->where('payment_category_id', $this->request['payment_category_id']))
+        $query->when($this->request['class_name'] ?? null, fn($q) => $q->where('class_name', 'like', '%' . $this->request['class_name'] . '%'))
+              ->when($this->request['payment_category_id'] ?? null, fn($q) => $q->whereHas('paymentCategories', fn($pc) => $pc->where('payment_categories.id', $this->request['payment_category_id'])))
               ->when($this->request['payment_mode'] ?? null, fn($q) => $q->where('payment_mode', $this->request['payment_mode']))
               ->when($this->request['min_amount'] ?? null, fn($q) => $q->where('amount', '>=', $this->request['min_amount']))
               ->when($this->request['max_amount'] ?? null, fn($q) => $q->where('amount', '<=', $this->request['max_amount']));
@@ -55,7 +54,6 @@ class ReceiptsReportExport implements FromCollection, WithHeadings, WithMapping,
             'Receipt No',
             'Student Name',
             'Class',
-            'Stream',
             'Payment Category',
             'Amount',
             'Payment Date',
@@ -72,8 +70,7 @@ class ReceiptsReportExport implements FromCollection, WithHeadings, WithMapping,
         return [
             $receipt->receipt_no,
             $receipt->student_name,
-            $receipt->classRoom?->name ?? 'N/A',
-            $receipt->stream?->name ?? 'N/A',
+            $receipt->class_name ?? 'N/A',
             $receipt->paymentCategories->pluck('name')->implode(', ') ?? 'N/A',
             number_format($receipt->amount, 2),
             \Carbon\Carbon::parse($receipt->payment_date)->format('d/m/Y'),
@@ -116,10 +113,10 @@ class ReceiptsReportExport implements FromCollection, WithHeadings, WithMapping,
                 
                 // Set total row values
                 $sheet->setCellValue('A' . $totalRow, 'TOTAL:');
-                $sheet->setCellValue('F' . $totalRow, $totalAmount);
+                $sheet->setCellValue('E' . $totalRow, $totalAmount);
                 
                 // Style total row
-                $sheet->getStyle('A' . $totalRow . ':F' . $totalRow)->applyFromArray([
+                $sheet->getStyle('A' . $totalRow . ':E' . $totalRow)->applyFromArray([
                     'font' => ['bold' => true],
                     'fill' => [
                         'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
@@ -128,7 +125,7 @@ class ReceiptsReportExport implements FromCollection, WithHeadings, WithMapping,
                 ]);
                 
                 // Merge cells for total label
-                $sheet->mergeCells('A' . $totalRow . ':E' . $totalRow);
+                $sheet->mergeCells('A' . $totalRow . ':D' . $totalRow);
                 $sheet->getStyle('A' . $totalRow)->getAlignment()->setHorizontal('right');
             },
         ];

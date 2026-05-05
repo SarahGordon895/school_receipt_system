@@ -22,24 +22,11 @@
           </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-6">
           <div class="form-floating">
-            <select class="form-select" id="class_id" name="class_id" required>
-              <option value="">Select class</option>
-              @foreach($classes as $c)
-                <option value="{{ $c->id }}" @selected(old('class_id',$receipt->class_id)==$c->id)>{{ $c->name }}</option>
-              @endforeach
-            </select>
-            <label for="class_id">Class</label>
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="form-floating">
-            <select class="form-select" id="stream_id" name="stream_id" required>
-              <option value="">Select stream</option>
-            </select>
-            <label for="stream_id">Stream</label>
+            <input type="text" class="form-control" id="class_name" name="class_name"
+                   value="{{ old('class_name',$receipt->class_name) }}" placeholder="Class">
+            <label for="class_name">Class (e.g. Form I)</label>
           </div>
         </div>
 
@@ -189,31 +176,6 @@
 
 @push('scripts')
 <script>
-  async function loadStreams(classId, selectedId = null) {
-    const streamSelect = document.getElementById('stream_id');
-    streamSelect.innerHTML = '<option value="">Loading...</option>';
-    if (!classId) { streamSelect.innerHTML = '<option value="">Select stream</option>'; return; }
-    try {
-      const res = await fetch(`{{ url('/api/classes') }}/${classId}/streams`);
-      const data = await res.json();
-      streamSelect.innerHTML = '<option value="">Select stream</option>';
-      data.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.id; opt.textContent = s.name;
-        if (selectedId && Number(selectedId) === Number(s.id)) opt.selected = true;
-        streamSelect.appendChild(opt);
-      });
-    } catch (e) {
-      streamSelect.innerHTML = '<option value="">Failed to load</option>';
-    }
-  }
-
-  const classSelect = document.getElementById('class_id');
-  classSelect.addEventListener('change', () => loadStreams(classSelect.value));
-
-  // Preload for edit
-  loadStreams({{ (int) old('class_id', $receipt->class_id) }}, {{ (int) old('stream_id', $receipt->stream_id) }});
-
   // Payment Categories JavaScript
   let categoryIndex = {{ max($receipt->paymentCategories->count(), 1) }};
 

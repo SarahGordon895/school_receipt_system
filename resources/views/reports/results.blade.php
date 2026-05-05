@@ -92,7 +92,6 @@
                                     <th>Receipt No</th>
                                     <th>Student Name</th>
                                     <th>Class</th>
-                                    <th>Stream</th>
                                     <th>Payment Category</th>
                                     <th>Amount</th>
                                     <th>Payment Date</th>
@@ -110,8 +109,7 @@
                                         </a>
                                     </td>
                                     <td>{{ $receipt->student_name }}</td>
-                                    <td>{{ $receipt->classRoom?->name ?? 'N/A' }}</td>
-                                    <td>{{ $receipt->stream?->name ?? 'N/A' }}</td>
+                                    <td>{{ $receipt->class_name ?? 'N/A' }}</td>
                                     <td>{{ $receipt->paymentCategories->pluck('name')->implode(', ') ?? 'N/A' }}</td>
                                     <td class="text-end fw-semibold">{{ number_format($receipt->amount, 2) }}</td>
                                     <td>{{ \Carbon\Carbon::parse($receipt->payment_date)->format('d/m/Y') }}</td>

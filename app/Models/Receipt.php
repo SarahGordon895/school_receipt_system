@@ -13,8 +13,7 @@ class Receipt extends Model
         'receipt_no',
         'student_id',
         'student_name',
-        'class_id',
-        'stream_id',
+        'class_name',
         'amount',
         'payment_date',
         'payment_mode',
@@ -55,15 +54,6 @@ class Receipt extends Model
             $seq = str_pad((string) $counter->current, 4, '0', STR_PAD_LEFT);
             return "RCPT-{$year}-{$term}-{$seq}";
         }, 3);
-    }
-
-    public function classRoom()
-    {
-        return $this->belongsTo(ClassRoom::class, 'class_id');
-    }
-    public function stream()
-    {
-        return $this->belongsTo(Stream::class);
     }
 
     public function paymentCategories()

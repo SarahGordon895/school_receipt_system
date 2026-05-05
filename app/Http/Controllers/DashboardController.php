@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Receipt;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
@@ -26,25 +27,32 @@ class DashboardController extends Controller
             ->whereBetween('payment_date', [$monthStart, now()])
             ->groupBy('payment_mode')->orderByDesc('s')->get();
 
-        $recent = \App\Models\Receipt::with(['classRoom', 'stream'])
+        $recent = \App\Models\Receipt::query()
             ->latest()->take(8)->get();
 
-        $topClasses = \App\Models\Receipt::select('class_id', DB::raw('SUM(amount) s'))
-            ->whereBetween('payment_date', [$yearStart, now()])
-            ->groupBy('class_id')
-            ->with('classRoom:id,name')
-            ->orderByDesc('s')->take(5)->get();
+        if (Schema::hasColumn('receipts', 'class_name')) {
+            $topClasses = \App\Models\Receipt::select('class_name', DB::raw('SUM(amount) s'))
+                ->whereBetween('payment_date', [$yearStart, now()])
+                ->groupBy('class_name')
+                ->orderByDesc('s')
+                ->take(5)
+                ->get();
+        } else {
+            // Backward compatibility for older databases before class_name migration.
+            $topClasses = collect();
+        }
 
         // NEW: Totals by payment category (this month)
-        $byCategory = DB::table('receipts')
-            ->leftJoin('payment_categories', 'payment_categories.id', '=', 'receipts.payment_category_id')
+        $byCategory = DB::table('receipt_payment_category')
+            ->join('receipts', 'receipts.id', '=', 'receipt_payment_category.receipt_id')
+            ->join('payment_categories', 'payment_categories.id', '=', 'receipt_payment_category.payment_category_id')
             ->whereBetween('payment_date', [$monthStart, now()])
             ->select(
-                DB::raw("COALESCE(payment_categories.name, 'Uncategorized') as name"),
-                DB::raw('COUNT(*) as c'),
-                DB::raw('SUM(receipts.amount) as s')
+                DB::raw('payment_categories.name as name'),
+                DB::raw('COUNT(receipt_payment_category.id) as c'),
+                DB::raw('SUM(receipt_payment_category.amount) as s')
             )
-            ->groupBy(DB::raw("COALESCE(payment_categories.name, 'Uncategorized')"))
+            ->groupBy('payment_categories.name')
             ->orderByDesc('s')
             ->get();
 

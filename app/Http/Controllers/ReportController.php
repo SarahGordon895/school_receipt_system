@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ClassRoom;
 use App\Models\PaymentCategory;
 use App\Models\Receipt;
-use App\Models\Stream;
+use App\Models\Student;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -15,11 +14,9 @@ class ReportController extends Controller
 {
     public function index()
     {
-        $classes = ClassRoom::orderBy('name')->get(['id', 'name']);
-        $streams = Stream::orderBy('name')->get(['id', 'name']);
         $categories = PaymentCategory::orderBy('name')->get(['id', 'name']);
         
-        return view('reports.index', compact('classes', 'streams', 'categories'));
+        return view('reports.index', compact('categories'));
     }
 
     public function generate(Request $request)
@@ -28,15 +25,14 @@ class ReportController extends Controller
             'date_range' => 'required|in:today,yesterday,this_week,last_week,this_month,last_month,this_year,last_year,custom',
             'start_date' => 'nullable|required_if:date_range,custom|date',
             'end_date' => 'nullable|required_if:date_range,custom|date|after_or_equal:start_date',
-            'class_id' => 'nullable|exists:classes,id',
-            'stream_id' => 'nullable|exists:streams,id',
+            'class_name' => 'nullable|string|max:255',
             'payment_category_id' => 'nullable|exists:payment_categories,id',
             'payment_mode' => 'nullable|in:Cash,Bank,Mobile Money,Other',
             'min_amount' => 'nullable|numeric|min:0',
             'max_amount' => 'nullable|numeric|min:0',
         ]);
 
-        $query = Receipt::with(['classRoom', 'stream', 'paymentCategories', 'user']);
+        $query = Receipt::with(['paymentCategories', 'user']);
 
         // Apply date range filter
         $dateRange = $request->date_range;
@@ -50,9 +46,8 @@ class ReportController extends Controller
         }
 
         // Apply other filters
-        $query->when($request->class_id, fn($q) => $q->where('class_id', $request->class_id))
-              ->when($request->stream_id, fn($q) => $q->where('stream_id', $request->stream_id))
-              ->when($request->payment_category_id, fn($q) => $q->where('payment_category_id', $request->payment_category_id))
+        $query->when($request->class_name, fn($q) => $q->where('class_name', 'like', '%' . $request->class_name . '%'))
+              ->when($request->payment_category_id, fn($q) => $q->whereHas('paymentCategories', fn($pc) => $pc->where('payment_categories.id', $request->payment_category_id)))
               ->when($request->payment_mode, fn($q) => $q->where('payment_mode', $request->payment_mode))
               ->when($request->min_amount, fn($q) => $q->where('amount', '>=', $request->min_amount))
               ->when($request->max_amount, fn($q) => $q->where('amount', '<=', $request->max_amount));
@@ -67,7 +62,7 @@ class ReportController extends Controller
             'payment_modes' => $receipts->groupBy('payment_mode')->map->count(),
             'categories' => $receipts->flatMap(function ($receipt) {
                 return $receipt->paymentCategories->pluck('name');
-            })->countBy()->all(),
+            })->countBy(),
         ];
 
         return view('reports.results', compact('receipts', 'summary', 'request'));
@@ -79,8 +74,7 @@ class ReportController extends Controller
             'date_range' => 'required|in:today,yesterday,this_week,last_week,this_month,last_month,this_year,last_year,custom',
             'start_date' => 'nullable|required_if:date_range,custom|date',
             'end_date' => 'nullable|required_if:date_range,custom|date|after_or_equal:start_date',
-            'class_id' => 'nullable|exists:classes,id',
-            'stream_id' => 'nullable|exists:streams,id',
+            'class_name' => 'nullable|string|max:255',
             'payment_category_id' => 'nullable|exists:payment_categories,id',
             'payment_mode' => 'nullable|in:Cash,Bank,Mobile Money,Other',
             'min_amount' => 'nullable|numeric|min:0',
@@ -98,15 +92,14 @@ class ReportController extends Controller
             'date_range' => 'required|in:today,yesterday,this_week,last_week,this_month,last_month,this_year,last_year,custom',
             'start_date' => 'nullable|required_if:date_range,custom|date',
             'end_date' => 'nullable|required_if:date_range,custom|date|after_or_equal:start_date',
-            'class_id' => 'nullable|exists:classes,id',
-            'stream_id' => 'nullable|exists:streams,id',
+            'class_name' => 'nullable|string|max:255',
             'payment_category_id' => 'nullable|exists:payment_categories,id',
             'payment_mode' => 'nullable|in:Cash,Bank,Mobile Money,Other',
             'min_amount' => 'nullable|numeric|min:0',
             'max_amount' => 'nullable|numeric|min:0',
         ]);
 
-        $query = Receipt::with(['classRoom', 'stream', 'paymentCategories', 'user']);
+        $query = Receipt::with(['paymentCategories', 'user']);
 
         // Apply date range filter
         $dateRange = $request->date_range;
@@ -120,9 +113,8 @@ class ReportController extends Controller
         }
 
         // Apply other filters
-        $query->when($request->class_id, fn($q) => $q->where('class_id', $request->class_id))
-              ->when($request->stream_id, fn($q) => $q->where('stream_id', $request->stream_id))
-              ->when($request->payment_category_id, fn($q) => $q->where('payment_category_id', $request->payment_category_id))
+        $query->when($request->class_name, fn($q) => $q->where('class_name', 'like', '%' . $request->class_name . '%'))
+              ->when($request->payment_category_id, fn($q) => $q->whereHas('paymentCategories', fn($pc) => $pc->where('payment_categories.id', $request->payment_category_id)))
               ->when($request->payment_mode, fn($q) => $q->where('payment_mode', $request->payment_mode))
               ->when($request->min_amount, fn($q) => $q->where('amount', '>=', $request->min_amount))
               ->when($request->max_amount, fn($q) => $q->where('amount', '<=', $request->max_amount));
@@ -137,7 +129,7 @@ class ReportController extends Controller
             'payment_modes' => $receipts->groupBy('payment_mode')->map->count(),
             'categories' => $receipts->flatMap(function ($receipt) {
                 return $receipt->paymentCategories->pluck('name');
-            })->countBy()->all(),
+            })->countBy(),
         ];
 
         $pdf = Pdf::loadView('reports.pdf', compact('receipts', 'summary', 'request'));
@@ -163,9 +155,30 @@ class ReportController extends Controller
         };
     }
 
-    public function getStreamsByClass($classId)
+    public function unpaid()
     {
-        $streams = Stream::where('class_id', $classId)->orderBy('name')->get(['id', 'name']);
-        return response()->json($streams);
+        $students = Student::query()
+            ->withSum('receipts', 'amount')
+            ->orderBy('name')
+            ->get()
+            ->map(function (Student $student) {
+                return [
+                    'student' => $student,
+                    'expected' => $student->expected_amount,
+                    'paid' => $student->paid_amount,
+                    'balance' => $student->balance,
+                    'is_overdue' => $student->fee_due_date && $student->fee_due_date->isPast() && $student->balance > 0,
+                ];
+            })
+            ->filter(fn($row) => $row['balance'] > 0)
+            ->values();
+
+        $summary = [
+            'students_with_balance' => $students->count(),
+            'total_outstanding' => $students->sum('balance'),
+            'overdue_count' => $students->where('is_overdue', true)->count(),
+        ];
+
+        return view('reports.unpaid', compact('students', 'summary'));
     }
 }

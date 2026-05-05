@@ -109,10 +109,9 @@
                 {{ ucfirst(str_replace('_', ' ', $request->date_range)) }}
             @endif
         </p>
-        @if($request->class_id || $request->stream_id || $request->payment_category_id || $request->payment_mode)
+        @if($request->class_name || $request->payment_category_id || $request->payment_mode)
             <p><strong>Filters Applied:</strong>
-                @if($request->class_id) Class: {{ App\Models\ClassRoom::find($request->class_id)?->name }} @endif
-                @if($request->stream_id) Stream: {{ App\Models\Stream::find($request->stream_id)?->name }} @endif
+                @if($request->class_name) Class: {{ $request->class_name }} @endif
                 @if($request->payment_category_id) Category: {{ App\Models\PaymentCategory::find($request->payment_category_id)?->name }} @endif
                 @if($request->payment_mode) Mode: {{ $request->payment_mode }} @endif
             </p>
@@ -147,7 +146,6 @@
                 <th>Receipt No</th>
                 <th>Student Name</th>
                 <th>Class</th>
-                <th>Stream</th>
                 <th>Payment Category</th>
                 <th class="text-right">Amount</th>
                 <th>Payment Date</th>
@@ -161,8 +159,7 @@
             <tr>
                 <td>{{ $receipt->receipt_no }}</td>
                 <td>{{ $receipt->student_name }}</td>
-                <td>{{ $receipt->classRoom?->name ?? 'N/A' }}</td>
-                <td>{{ $receipt->stream?->name ?? 'N/A' }}</td>
+                <td>{{ $receipt->class_name ?? 'N/A' }}</td>
                 <td>{{ $receipt->paymentCategories->pluck('name')->implode(', ') ?? 'N/A' }}</td>
                 <td class="text-right">{{ number_format($receipt->amount, 2) }}</td>
                 <td>{{ \Carbon\Carbon::parse($receipt->payment_date)->format('d/m/Y') }}</td>
@@ -174,7 +171,7 @@
         </tbody>
         <tfoot>
             <tr>
-                <th colspan="5" class="text-right" style="background-color: #f2f2f2; font-weight: bold;">TOTAL AMOUNT:</th>
+                <th colspan="4" class="text-right" style="background-color: #f2f2f2; font-weight: bold;">TOTAL AMOUNT:</th>
                 <th class="text-right" style="background-color: #f2f2f2; font-weight: bold; font-size: 14px; color: #2c5282;">
                     {{ number_format($receipts->sum('amount'), 2) }}
                 </th>

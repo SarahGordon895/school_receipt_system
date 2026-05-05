@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -44,5 +45,30 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function hasRole(string ...$roles): bool
+    {
+        return in_array($this->normalized_role, $roles, true);
+    }
+
+    public function isParent(): bool
+    {
+        return $this->normalized_role === 'parent';
+    }
+
+    public function getNormalizedRoleAttribute(): string
+    {
+        return $this->role ?: 'school_admin';
+    }
+
+    public function getHomeRouteAttribute(): string
+    {
+        return $this->isParent() ? 'parent.dashboard' : 'dashboard';
+    }
+
+    public function parentStudents()
+    {
+        return $this->hasMany(Student::class, 'parent_email', 'email');
     }
 }

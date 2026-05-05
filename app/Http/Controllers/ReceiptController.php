@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ClassRoom;
 use App\Models\PaymentCategory;
 use App\Models\Receipt;
-use App\Models\Stream;
 use App\Models\Student;
+use App\Services\ParentPaymentNotifier;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,13 +15,12 @@ class ReceiptController extends Controller
     public function index(Request $request)
     {
         $q = trim((string) $request->get('q', ''));
-        $classId = $request->get('class_id');
-        $streamId = $request->get('stream_id');
+        $className = trim((string) $request->get('class_name', ''));
         $from = $request->get('from');
         $to = $request->get('to');
         $categoryId = $request->get('payment_category_id'); // NEW
 
-        $receipts = Receipt::with(['classRoom', 'stream', 'user', 'paymentCategories']) // NEW eager load
+        $receipts = Receipt::with(['user', 'paymentCategories'])
             ->when(
                 $q !== '',
                 fn($qb) =>
@@ -32,30 +30,21 @@ class ReceiptController extends Controller
                         ->orWhere('receipt_no', 'like', "%{$q}%")
                 )
             )
-            ->when($classId, fn($qb) => $qb->where('class_id', $classId))
-            ->when($streamId, fn($qb) => $qb->where('stream_id', $streamId))
-            ->when($categoryId, fn($qb) => $qb->where('payment_category_id', $categoryId)) // NEW filter
+            ->when($className !== '', fn($qb) => $qb->where('class_name', 'like', "%{$className}%"))
+            ->when($categoryId, fn($qb) => $qb->whereHas('paymentCategories', fn($pc) => $pc->where('payment_categories.id', $categoryId))) // NEW filter
             ->when($from, fn($qb) => $qb->whereDate('created_at', '>=', $from))
             ->when($to, fn($qb) => $qb->whereDate('created_at', '<=', $to))
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
-        $classes = ClassRoom::orderBy('name')->get(['id', 'name']);
-        $streams = $classId
-            ? Stream::where('class_id', $classId)->orderBy('name')->get(['id', 'name', 'class_id'])
-            : collect(); // load via AJAX when class changes
-
         $categories = \App\Models\PaymentCategory::orderBy('name')->get(['id', 'name']); // NEW
 
         return view('receipts.index', compact(
             'receipts',
-            'classes',
-            'streams',
             'categories',
             'q',
-            'classId',
-            'streamId',
+            'className',
             'from',
             'to',
             'categoryId'
@@ -66,24 +55,19 @@ class ReceiptController extends Controller
 
     public function create()
     {
-        $classes = ClassRoom::orderBy('name')->get();
         $categories = PaymentCategory::orderBy('name')->get();
-        return view('receipts.create', compact('classes', 'categories'));
+        return view('receipts.create', compact('categories'));
     }
 
     public function store(Request $request)
     {
-        // Debug: Log the incoming request data
-        \Log::info('Receipt creation request data:', $request->all());
-        
         $data = $request->validate([
             'student_id' => ['nullable', 'exists:students,id'],
             'student_name' => ['nullable', 'string', 'max:255'],
             'payment_categories' => ['required', 'array', 'min:1'],
             'payment_categories.*.category_id' => ['required', 'exists:payment_categories,id'],
             'payment_categories.*.amount' => ['required', 'integer', 'min:1'],
-            'class_id' => ['required', 'exists:classes,id'],
-            'stream_id' => ['required', 'exists:streams,id'],
+            'class_name' => ['nullable', 'string', 'max:255'],
             'payment_date' => ['required', 'date'],
             'payment_mode' => ['required', Rule::in(['Cash', 'Bank', 'Mobile Money', 'Other'])],
             'reference' => ['nullable', 'string', 'max:255'],
@@ -110,16 +94,21 @@ class ReceiptController extends Controller
         }
         $receipt->syncPaymentCategories($categoriesWithAmounts);
 
-        return redirect()->route('receipts.show', $receipt)->with('status', 'Receipt generated!')->withFragment('thermal-root') . '?print=1';
+        $receipt->load('paymentCategories');
+        app(ParentPaymentNotifier::class)->notify($receipt);
+
+        return redirect()
+            ->to(route('receipts.show', $receipt) . '?print=1')
+            ->with('status', 'Receipt generated!')
+            ->withFragment('thermal-root');
     }
 
     public function edit(Receipt $receipt)
     {
-        $classes = ClassRoom::orderBy('name')->get();
         $categories = PaymentCategory::orderBy('name')->get();
         $receipt->load(['paymentCategories']);
         
-        return view('receipts.edit', compact('receipt', 'classes', 'categories'));
+        return view('receipts.edit', compact('receipt', 'categories'));
     }
 
     public function update(Request $request, Receipt $receipt)
@@ -130,8 +119,7 @@ class ReceiptController extends Controller
             'payment_categories' => ['required', 'array', 'min:1'],
             'payment_categories.*.category_id' => ['required', 'exists:payment_categories,id'],
             'payment_categories.*.amount' => ['required', 'integer', 'min:1'],
-            'class_id' => ['required', 'exists:classes,id'],
-            'stream_id' => ['required', 'exists:streams,id'],
+            'class_name' => ['nullable', 'string', 'max:255'],
             'payment_date' => ['required', 'date'],
             'payment_mode' => ['required', Rule::in(['Cash', 'Bank', 'Mobile Money', 'Other'])],
             'reference' => ['nullable', 'string', 'max:255'],
@@ -165,12 +153,11 @@ class ReceiptController extends Controller
         $this->index($request); // to reuse vars would require refactor; we’ll just repeat quickly:
 
         $q = trim((string) $request->get('q', ''));
-        $classId = $request->get('class_id');
-        $streamId = $request->get('stream_id');
+        $className = trim((string) $request->get('class_name', ''));
         $from = $request->get('from');
         $to = $request->get('to');
 
-        $receipts = Receipt::with(['classRoom', 'stream', 'user', 'paymentCategories'])
+        $receipts = Receipt::with(['user', 'paymentCategories'])
             ->when(
                 $q !== '',
                 fn($qb) =>
@@ -180,8 +167,7 @@ class ReceiptController extends Controller
                         ->orWhere('receipt_no', 'like', "%{$q}%")
                 )
             )
-            ->when($classId, fn($qb) => $qb->where('class_id', $classId))
-            ->when($streamId, fn($qb) => $qb->where('stream_id', $streamId))
+            ->when($className !== '', fn($qb) => $qb->where('class_name', 'like', "%{$className}%"))
             ->when($from, fn($qb) => $qb->whereDate('created_at', '>=', $from))
             ->when($to, fn($qb) => $qb->whereDate('created_at', '<=', $to))
             ->latest()->paginate(15)->withQueryString();
@@ -191,7 +177,7 @@ class ReceiptController extends Controller
 
     public function pdf(Receipt $receipt)
     {
-        $receipt->load(['classRoom', 'stream']);
+        $receipt->load(['paymentCategories']);
         $pdf = Pdf::loadView('receipts.pdf', ['receipt' => $receipt]);
         $filename = $receipt->receipt_no . '.pdf';
         return $pdf->download($filename);
@@ -199,7 +185,7 @@ class ReceiptController extends Controller
 
     public function show(Receipt $receipt)
     {
-        $receipt->load(['classRoom', 'stream', 'paymentCategories']);
+        $receipt->load(['paymentCategories']);
 
         return view('receipts.show', compact('receipt'));
     }
