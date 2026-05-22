@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Receipt;
+use App\Models\Student;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -15,12 +16,20 @@ class DashboardController extends Controller
         $monthStart = now()->startOfMonth();
         $yearStart = now()->startOfYear();
 
+        $studentsWithBalance = Student::withSum('receipts', 'amount')->get()
+            ->filter(fn (Student $s) => $s->balance > 0);
+
         $metrics = [
-            'total_collected' => number_format(\App\Models\Receipt::sum('amount')),
-            'today_total' => number_format(\App\Models\Receipt::whereDate('payment_date', $today)->sum('amount')),
-            'today_count' => \App\Models\Receipt::whereDate('payment_date', $today)->count(),
-            'month_total' => number_format(\App\Models\Receipt::whereBetween('payment_date', [$monthStart, now()])->sum('amount')),
-            'month_count' => \App\Models\Receipt::whereBetween('payment_date', [$monthStart, now()])->count(),
+            'total_collected' => number_format(Receipt::sum('amount')),
+            'today_total' => number_format(Receipt::whereDate('payment_date', $today)->sum('amount')),
+            'today_count' => Receipt::whereDate('payment_date', $today)->count(),
+            'month_total' => number_format(Receipt::whereBetween('payment_date', [$monthStart, now()])->sum('amount')),
+            'month_count' => Receipt::whereBetween('payment_date', [$monthStart, now()])->count(),
+            'outstanding_students' => $studentsWithBalance->count(),
+            'outstanding_total' => number_format($studentsWithBalance->sum(fn (Student $s) => $s->balance)),
+            'overdue_count' => $studentsWithBalance->filter(
+                fn (Student $s) => $s->fee_due_date && $s->fee_due_date->isPast()
+            )->count(),
         ];
 
         $byMode = \App\Models\Receipt::select('payment_mode', DB::raw('COUNT(*) c'), DB::raw('SUM(amount) s'))

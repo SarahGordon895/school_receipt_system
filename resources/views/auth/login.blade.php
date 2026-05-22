@@ -40,9 +40,10 @@
                 </a>
             @endif
 
-            <x-primary-button class="w-full sm:w-auto justify-center sm:ms-3">
+            <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-school-primary border border-transparent rounded-lg font-semibold text-sm text-white w-full sm:w-auto sm:ms-3 hover:bg-school-primary-hover focus:outline-none focus:ring-2 focus:ring-school-accent">
+                <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
                 {{ __('Log in') }}
-            </x-primary-button>
+            </button>
         </div>
     </form>
 </x-guest-layout>

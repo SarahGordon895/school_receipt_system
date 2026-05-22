@@ -2,9 +2,8 @@
 @section('title','Receipts')
 
 @section('actions')
-  <a href="{{ route('receipts.create') }}" class="btn btn-primary">
-    <i class="bi bi-plus-lg me-1"></i> New Receipt
-  </a>
+  <x-icon-btn :href="route('receipts.create')" icon="bi-receipt-cutoff" label="New receipt" variant="primary"
+    :iconOnly="false" />
 @endsection
 
 @section('content')
@@ -21,14 +20,13 @@
       </div>
 
       <div class="col-12 col-md-3">
-        <label for="class_name" class="form-label small text-muted mb-1">Filter by Class</label>
+        <label for="class_name" class="form-label small text-muted mb-1">Class</label>
         <input type="text" id="class_name" name="class_name" value="{{ $className ?? '' }}" class="form-control"
                placeholder="e.g. Form I">
       </div>
 
-      {{-- NEW: Payment Category --}}
       <div class="col-12 col-md-3">
-        <label for="payment_category_id" class="form-label small text-muted mb-1">Filter by Category</label>
+        <label for="payment_category_id" class="form-label small text-muted mb-1">Category</label>
         <select id="payment_category_id" name="payment_category_id" class="form-select">
           <option value="">All categories</option>
           @foreach($categories as $pc)
@@ -37,23 +35,21 @@
         </select>
       </div>
 
-      <div class="col-12 col-md-3 d-flex gap-2">
-        <button class="btn btn-primary flex-grow-1">
-          <i class="bi bi-funnel me-1"></i> Apply
-        </button>
-        <a href="{{ route('receipts.index') }}" class="btn btn-outline-secondary">Reset</a>
+      <div class="col-12 col-md-3">
+        <div class="filter-bar-actions">
+          <x-icon-btn type="submit" icon="bi-funnel-fill" label="Apply filters" variant="primary" />
+          <x-icon-btn :href="route('receipts.index')" icon="bi-arrow-counterclockwise" label="Reset filters"
+            variant="outline-secondary" />
+        </div>
       </div>
     </form>
   </div>
 </div>
 
-
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <span class="fw-semibold">All Receipts</span>
-    <a href="{{ route('receipts.create') }}" class="btn btn-sm btn-outline-primary">
-      <i class="bi bi-receipt-cutoff me-1"></i> Generate Receipt
-    </a>
+    <x-icon-btn :href="route('receipts.create')" icon="bi-plus-lg" label="Generate receipt" variant="outline-primary" size="sm" />
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -68,7 +64,7 @@
             <th>Date</th>
             <th>Mode</th>
             <th>Ref</th>
-            <th class="text-end">Action</th>
+            <th class="text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -83,20 +79,11 @@
               <td>{{ $r->payment_mode }}</td>
               <td>{{ $r->reference ?: '—' }}</td>
               <td class="text-end">
-                <div class="btn-group" role="group">
-                  <a href="{{ route('receipts.show',$r) }}" class="btn btn-sm btn-outline-secondary" title="View">
-                    <i class="bi bi-eye"></i>
-                  </a>
-                  <a href="{{ route('receipts.edit',$r) }}" class="btn btn-sm btn-outline-primary" title="Edit">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                  <form action="{{ route('receipts.destroy',$r) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this receipt? This action cannot be undone.')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </form>
-                </div>
+                <x-table-actions
+                  :view="route('receipts.show', $r)"
+                  :edit="route('receipts.edit', $r)"
+                  :delete="route('receipts.destroy', $r)"
+                  deleteConfirm="Delete this receipt permanently?" />
               </td>
             </tr>
           @empty
@@ -113,4 +100,3 @@
   @endif
 </div>
 @endsection
-

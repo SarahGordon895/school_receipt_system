@@ -66,6 +66,7 @@ Route::middleware(['auth'])->group(function () {
     // Reports routes
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/unpaid', [ReportController::class, 'unpaid'])->name('reports.unpaid');
+        Route::post('/reports/unpaid/send-reminders', [ReportController::class, 'sendReminders'])->name('reports.unpaid.send-reminders');
         Route::get('/notification-logs', [NotificationLogController::class, 'index'])->name('notification-logs.index');
         Route::post('/reports/generate', [ReportController::class, 'generate'])->name('reports.generate');
         Route::post('/reports/export/excel', [ReportController::class, 'exportExcel'])->name('reports.export.excel');

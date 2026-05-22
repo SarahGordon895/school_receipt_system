@@ -2,7 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Student extends Model
 {
@@ -10,33 +15,74 @@ class Student extends Model
         'admission_no',
         'name',
         'class_name',
+        'parent_user_id',
         'parent_name',
         'parent_phone',
         'parent_email',
         'fee_due_date',
         'expected_total_fee',
+        'admitted_at',
+        'registered_by_user_id',
     ];
 
     protected function casts(): array
     {
         return [
             'fee_due_date' => 'date',
+            'admitted_at' => 'datetime',
         ];
     }
 
-    public function receipts()
+    public function parentUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'parent_user_id');
+    }
+
+    public function registeredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'registered_by_user_id');
+    }
+
+    public function parentLinks(): HasMany
+    {
+        return $this->hasMany(StudentParentLink::class);
+    }
+
+    public function primaryParentLink(): HasOne
+    {
+        return $this->hasOne(StudentParentLink::class)->where('is_primary', true);
+    }
+
+    public function guardians(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'student_parent_links', 'student_id', 'parent_user_id')
+            ->withPivot(['relationship', 'is_primary', 'parent_phone', 'linked_by_user_id', 'linked_at'])
+            ->withTimestamps();
+    }
+
+    public function receipts(): HasMany
     {
         return $this->hasMany(Receipt::class);
     }
 
-    public function feeStructures()
+    public function feeStructures(): BelongsToMany
     {
         return $this->belongsToMany(FeeStructure::class, 'fee_structure_student');
     }
 
-    public function notificationLogs()
+    public function notificationLogs(): HasMany
     {
         return $this->hasMany(NotificationLog::class);
+    }
+
+    public function scopeForParent(Builder $query, User $parent): Builder
+    {
+        return $query->whereHas('parentLinks', fn (Builder $q) => $q->where('parent_user_id', $parent->id));
+    }
+
+    public function belongsToParent(User $parent): bool
+    {
+        return \App\Support\ParentStudentAdmission::parentOwnsStudent($parent, $this);
     }
 
     public function getPaidAmountAttribute(): int
@@ -51,6 +97,7 @@ class Student extends Model
     public function getExpectedAmountAttribute(): int
     {
         $fromStructures = (int) $this->feeStructures()->sum('amount');
+
         return $fromStructures > 0 ? $fromStructures : (int) $this->expected_total_fee;
     }
 

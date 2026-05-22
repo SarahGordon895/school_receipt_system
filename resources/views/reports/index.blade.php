@@ -85,24 +85,19 @@
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
                     <div class="row">
                         <div class="col-12">
-                            <a href="{{ route('reports.unpaid') }}" class="btn btn-outline-dark me-2">
-                                <i class="bi bi-exclamation-triangle me-2"></i>Unpaid/Overdue Report
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-search me-2"></i>Generate Report
-                            </button>
-                            <button type="submit" formaction="{{ route('reports.export.excel') }}" class="btn btn-success ms-2">
-                                <i class="bi bi-file-earmark-excel me-2"></i>Export to Excel
-                            </button>
-                            <button type="submit" formaction="{{ route('reports.export.pdf') }}" class="btn btn-danger ms-2">
-                                <i class="bi bi-file-earmark-pdf me-2"></i>Export to PDF
-                            </button>
-                            <button type="button" class="btn btn-secondary ms-2" onclick="resetForm()">
-                                <i class="bi bi-arrow-clockwise me-2"></i>Reset
-                            </button>
+                            <div class="toolbar-icon-group">
+                                <x-icon-btn :href="route('reports.unpaid')" icon="bi-exclamation-triangle" label="Unpaid report"
+                                    variant="outline-dark" :iconOnly="false" />
+                                <x-icon-btn type="submit" icon="bi-search" label="Generate report" variant="primary" :iconOnly="false" />
+                                <x-icon-btn type="submit" icon="bi-file-earmark-excel" label="Export Excel" variant="success"
+                                    :iconOnly="false" formaction="{{ route('reports.export.excel') }}" />
+                                <x-icon-btn type="submit" icon="bi-file-earmark-pdf" label="Export PDF" variant="danger"
+                                    :iconOnly="false" formaction="{{ route('reports.export.pdf') }}" />
+                                <x-icon-btn type="button" icon="bi-arrow-counterclockwise" label="Reset form" variant="outline-secondary"
+                                    onclick="resetForm()" />
+                            </div>
                         </div>
                     </div>
                 </form>

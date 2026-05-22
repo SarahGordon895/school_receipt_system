@@ -28,7 +28,7 @@
         default => [
             'title' => __('Sign in'),
             'heading' => __('Sign in to continue'),
-            'intro' => __(''),
+            'intro' => __('Track fees, record payments, and send reminders to parents — securely from one place.'),
         ],
     };
 @endphp
@@ -49,8 +49,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    @include('layouts.partials.icons-head')
+    <link href="{{ asset('css/school-theme.css') }}" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 

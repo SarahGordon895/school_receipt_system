@@ -55,9 +55,7 @@
                     @foreach($request->all() as $key => $value)
                         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                     @endforeach
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-file-earmark-excel me-2"></i>Export to Excel
-                    </button>
+                    <x-icon-btn type="submit" icon="bi-file-earmark-excel" label="Export to Excel" variant="success" :iconOnly="false" />
                 </form>
                 
                 <form method="POST" action="{{ route('reports.export.pdf') }}" class="d-inline-block ms-2">
@@ -65,14 +63,10 @@
                     @foreach($request->all() as $key => $value)
                         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                     @endforeach
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-file-earmark-pdf me-2"></i>Export to PDF
-                    </button>
+                    <x-icon-btn type="submit" icon="bi-file-earmark-pdf" label="Export to PDF" variant="danger" :iconOnly="false" />
                 </form>
 
-                <a href="{{ route('reports.index') }}" class="btn btn-secondary ms-2">
-                    <i class="bi bi-arrow-left me-2"></i>Back to Filters
-                </a>
+                <x-icon-btn :href="route('reports.index')" icon="bi-arrow-left" label="Back to filters" variant="outline-secondary" :iconOnly="false" class="ms-2" />
             </div>
         </div>
 

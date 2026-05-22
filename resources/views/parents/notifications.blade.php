@@ -2,15 +2,13 @@
 @section('title','My Notifications')
 
 @section('actions')
-  <form method="POST" action="{{ route('parent.notifications.read-all') }}" class="d-inline">
-    @csrf
-    <button type="submit" class="btn btn-primary">
-      <i class="bi bi-check2-all me-1"></i> Mark all as read
-    </button>
-  </form>
-  <a href="{{ route('parent.dashboard') }}" class="btn btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1"></i> Back to Parent Portal
-  </a>
+  <div class="page-actions">
+    <form method="POST" action="{{ route('parent.notifications.read-all') }}" class="d-inline">
+      @csrf
+      <x-icon-btn type="submit" icon="bi-check2-all" label="Mark all as read" variant="primary" :iconOnly="false" />
+    </form>
+    <x-icon-btn :href="route('parent.dashboard')" icon="bi-arrow-left" label="Back to portal" variant="outline-secondary" :iconOnly="false" />
+  </div>
 @endsection
 
 @section('content')
@@ -111,10 +109,10 @@
         <input type="date" name="to" class="form-control" value="{{ $filters['to'] ?? '' }}">
       </div>
       <div class="col-12 col-md-1 d-flex align-items-end">
-        <button class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
+        <x-icon-btn type="submit" icon="bi-funnel-fill" label="Apply filters" variant="primary" class="w-100" />
       </div>
       <div class="col-12 col-md-1 d-flex align-items-end">
-        <a href="{{ route('parent.notifications') }}" class="btn btn-outline-secondary w-100">Reset</a>
+        <x-icon-btn :href="route('parent.notifications')" icon="bi-arrow-counterclockwise" label="Reset filters" variant="outline-secondary" class="w-100" />
       </div>
     </form>
   </div>
@@ -168,7 +166,7 @@
                 @if(!$log->read_at)
                   <form method="POST" action="{{ route('parent.notifications.read', $log) }}">
                     @csrf
-                    <button class="btn btn-sm btn-outline-primary">Mark as read</button>
+                    <x-icon-btn type="submit" icon="bi-check2" label="Mark as read" variant="outline-primary" size="sm" />
                   </form>
                 @else
                   <span class="small text-success">Read {{ $log->read_at?->format('Y-m-d H:i') }}</span>

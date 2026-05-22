@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet">
 
     <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
-    <link href="{{ asset('icons/bootstrap-icons.css') }}" rel="stylesheet">
+    @include('layouts.partials.icons-head')
     <link href="{{ asset('css/school-theme.css') }}" rel="stylesheet">
 
     @stack('head')
@@ -51,14 +51,17 @@
                     @yield('actions')
 
                     @if(auth()->user()->hasRole('super_admin', 'school_admin'))
-                        <a href="{{ route('receipts.create') }}" class="btn btn-primary order-lg-last">
-                            <i class="bi bi-receipt-cutoff me-1"></i> Generate Receipt
-                        </a>
+                        <x-icon-btn :href="route('receipts.create')" icon="receipt-cutoff" label="Generate receipt"
+                            variant="primary" :iconOnly="false" class="order-lg-last" />
                     @endif
+
+                    <x-icon-btn :href="route('profile.edit')" icon="person-circle" label="My profile"
+                        variant="outline-secondary" :iconOnly="false" />
 
                     <form method="POST" action="{{ route('logout') }}" class="d-grid d-lg-inline">
                         @csrf
-                        <button type="submit" class="btn btn-outline-secondary w-100">Logout</button>
+                        <x-icon-btn type="submit" icon="box-arrow-right" label="Logout" variant="outline-secondary"
+                            class="w-100 w-lg-auto" />
                     </form>
                 </div>
             </div>
@@ -70,56 +73,7 @@
     <aside class="sidebar-school" id="sidebarSchool" aria-label="Main navigation">
         <div class="p-3 pt-4">
             <div class="nav-label px-2 mb-2">Menu</div>
-            <div class="list-group list-group-flush">
-                @if(auth()->user()->hasRole('super_admin', 'school_admin'))
-                    <a href="{{ route('dashboard') }}"
-                        class="list-group-item list-group-item-action d-flex align-items-center {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                        <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                    </a>
-                    <a href="{{ route('receipts.index') }}"
-                        class="list-group-item list-group-item-action d-flex align-items-center {{ request()->routeIs('receipts.*') ? 'active' : '' }}">
-                        <i class="bi bi-receipt me-2"></i> Receipts
-                    </a>
-                    <a href="{{ route('reports.index') }}"
-                        class="list-group-item list-group-item-action d-flex align-items-center {{ request()->routeIs('reports.*') ? 'active' : '' }}">
-                        <i class="bi bi-graph-up me-2"></i> Reports
-                    </a>
-                    <a href="{{ route('notification-logs.index') }}"
-                        class="list-group-item list-group-item-action d-flex align-items-center {{ request()->routeIs('notification-logs.*') ? 'active' : '' }}">
-                        <i class="bi bi-bell me-2"></i> Notification Logs
-                    </a>
-                    <a href="{{ route('students.index') }}"
-                        class="list-group-item list-group-item-action d-flex align-items-center {{ request()->routeIs('students.*') ? 'active' : '' }}">
-                        <i class="bi bi-people me-2"></i> Students
-                    </a>
-                    <a href="{{ route('fee-structures.index') }}"
-                        class="list-group-item list-group-item-action d-flex align-items-center {{ request()->routeIs('fee-structures.*') ? 'active' : '' }}">
-                        <i class="bi bi-cash-coin me-2"></i> Fee Structures
-                    </a>
-                    <a href="{{ route('payment-categories.index') }}"
-                        class="list-group-item list-group-item-action d-flex align-items-center {{ request()->routeIs('payment-categories.*') ? 'active' : '' }}">
-                        <i class="bi bi-tags me-2"></i> Payment Categories
-                    </a>
-                    <a href="{{ route('settings.edit') }}"
-                        class="list-group-item list-group-item-action d-flex align-items-center {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                        <i class="bi bi-gear me-2"></i> Settings
-                    </a>
-                @endif
-
-                @if(auth()->user()->isParent())
-                    <a href="{{ route('parent.dashboard') }}"
-                        class="list-group-item list-group-item-action d-flex align-items-center {{ request()->routeIs('parent.dashboard') ? 'active' : '' }}">
-                        <i class="bi bi-person-vcard me-2"></i> Parent Portal
-                    </a>
-                    <a href="{{ route('parent.notifications') }}"
-                        class="list-group-item list-group-item-action d-flex align-items-center justify-content-between {{ request()->routeIs('parent.notifications') ? 'active' : '' }}">
-                        <span><i class="bi bi-bell me-2"></i> My Notifications</span>
-                        @if(($parentUnreadNotifications ?? 0) > 0)
-                            <span class="badge rounded-pill text-bg-primary">{{ $parentUnreadNotifications }}</span>
-                        @endif
-                    </a>
-                @endif
-            </div>
+            @include('layouts.partials.sidebar-nav')
         </div>
     </aside>
 

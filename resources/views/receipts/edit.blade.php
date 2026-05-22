@@ -3,9 +3,7 @@
 
 @section('content')
 <div class="d-flex justify-content-end mb-3">
-  <a href="{{ route('receipts.show', $receipt) }}" class="btn btn-outline-secondary">
-    <i class="bi bi-eye me-1"></i> View Receipt
-  </a>
+  <x-icon-btn :href="route('receipts.show', $receipt)" icon="bi-eye" label="View receipt" variant="outline-secondary" :iconOnly="false" />
 </div>
 
 <div class="card">
@@ -34,9 +32,8 @@
           <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
               <span class="fw-semibold">Payment Categories</span>
-              <button type="button" class="btn btn-sm btn-outline-primary" onclick="addPaymentCategory()">
-                <i class="bi bi-plus me-1"></i> Add Category
-              </button>
+              <x-icon-btn type="button" icon="bi-plus-lg" label="Add payment category" variant="outline-primary" size="sm"
+                onclick="addPaymentCategory()" />
             </div>
             <div class="card-body">
               <div id="paymentCategoriesContainer">
@@ -76,8 +73,8 @@
                         </div>
                       </div>
                       <div class="col-md-12">
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePaymentCategory(this)">
-                          <i class="bi bi-trash me-1"></i> Remove
+                        <button type="button" class="btn btn-icon btn-outline-danger btn-sm" onclick="removePaymentCategory(this)" title="Remove category" aria-label="Remove category">
+                          <i class="bi bi-trash" aria-hidden="true"></i>
                         </button>
                       </div>
                     </div>
@@ -163,12 +160,7 @@
         </div>
       </div>
 
-      <div class="d-flex gap-2 mt-4">
-        <button class="btn btn-primary">
-          <i class="bi bi-save me-1"></i> Update
-        </button>
-        <a href="{{ route('receipts.show',$receipt) }}" class="btn btn-outline-secondary">Cancel</a>
-      </div>
+      <x-form-actions :cancelUrl="route('receipts.show', $receipt)" submitLabel="Update receipt" submitIcon="bi-check-lg" />
     </form>
   </div>
 </div>
@@ -214,8 +206,8 @@
             </div>
         </div>
         <div class="col-md-12">
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePaymentCategory(this)">
-                <i class="bi bi-trash me-1"></i> Remove
+            <button type="button" class="btn btn-icon btn-outline-danger btn-sm" onclick="removePaymentCategory(this)" title="Remove category" aria-label="Remove category">
+                <i class="bi bi-trash" aria-hidden="true"></i>
             </button>
         </div>
     `;

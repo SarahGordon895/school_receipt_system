@@ -1,9 +1,7 @@
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <span class="fw-semibold">All Receipts</span>
-    <a href="{{ route('receipts.create') }}" class="btn btn-sm btn-outline-primary">
-      <i class="bi bi-receipt-cutoff me-1"></i> Generate Receipt
-    </a>
+    <x-icon-btn :href="route('receipts.create')" icon="bi-plus-lg" label="Generate receipt" variant="outline-primary" size="sm" />
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -31,9 +29,7 @@
               <td>{{ $r->payment_mode }}</td>
               <td>{{ $r->reference ?: '—' }}</td>
               <td class="text-end">
-                <a href="{{ route('receipts.show',$r) }}" class="btn btn-sm btn-outline-secondary">
-                  <i class="bi bi-eye"></i>
-                </a>
+                <x-icon-btn :href="route('receipts.show',$r)" icon="bi-eye" label="View receipt" variant="outline-secondary" size="sm" />
               </td>
             </tr>
           @empty

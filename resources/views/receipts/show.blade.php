@@ -2,9 +2,7 @@
 @section('title', 'Receipt ' . $receipt->receipt_no)
 
 @section('actions')
-    <a href="{{ route('receipts.create') }}" class="btn btn-primary">
-        <i class="bi bi-receipt-cutoff me-1"></i> Generate Receipt
-    </a>
+    <x-icon-btn :href="route('receipts.create')" icon="bi-receipt-cutoff" label="Generate receipt" variant="primary" :iconOnly="false" />
 @endsection
 
 @section('content')
@@ -12,13 +10,10 @@
     <div class="card mb-4 fs-6">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span class="fw-semibold">Receipt Preview</span>
-            <div class="d-flex gap-2">
-                <a href="{{ route('receipts.index') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-arrow-left me-1"></i> Back
-                </a>
-                <button class="btn btn-dark btn-sm" onclick="window.print()">
-                    <i class="bi bi-printer me-1"></i> Print
-                </button>
+            <div class="table-actions">
+                <x-icon-btn :href="route('receipts.index')" icon="bi-arrow-left" label="Back to receipts" variant="outline-secondary" size="sm" />
+                <x-icon-btn :href="route('receipts.edit', $receipt)" icon="bi-pencil" label="Edit receipt" variant="outline-primary" size="sm" />
+                <x-icon-btn type="button" icon="bi-printer" label="Print receipt" variant="dark" size="sm" onclick="window.print()" />
             </div>
         </div>
         <div class="card-body">

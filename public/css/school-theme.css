@@ -86,32 +86,159 @@ body.school-app-body {
   color: var(--school-muted);
 }
 
-.sidebar-school .list-group-item {
-  border: none;
-  border-radius: var(--school-radius-sm) !important;
-  margin-bottom: 0.2rem;
-  padding: 0.65rem 0.85rem;
+/* Sidebar: icon-led navigation (no blocky rectangles) */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.sidebar-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--school-radius-sm);
   color: var(--school-text);
   font-weight: 500;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.sidebar-nav-link:hover {
+  color: var(--school-primary);
+  background: var(--school-primary-soft);
+}
+
+.sidebar-nav-link.active {
+  color: var(--school-primary);
+  background: var(--school-primary-soft);
+  border-left-color: var(--school-accent);
+  font-weight: 600;
+}
+
+.sidebar-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  color: var(--school-primary);
+  background: var(--school-primary-soft);
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.sidebar-school .list-group-item:hover {
-  background: var(--school-primary-soft);
-  color: var(--school-primary);
-}
-
-.sidebar-school .list-group-item.active {
+.sidebar-nav-link.active .sidebar-nav-icon,
+.sidebar-nav-link:hover .sidebar-nav-icon {
   background: var(--school-primary);
   color: #fff;
 }
 
-.sidebar-school .list-group-item.active i {
-  opacity: 1;
+.sidebar-nav-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
 }
 
-.sidebar-school .list-group-item i {
-  opacity: 0.85;
+.sidebar-nav-badge {
+  font-size: 0.7rem;
+}
+
+/* Bootstrap Icons — ensure glyphs render inside buttons & sidebar */
+.bi::before,
+[class^="bi-"]::before,
+[class*=" bi-"]::before {
+  display: inline-block !important;
+  font-family: "bootstrap-icons" !important;
+  font-style: normal;
+  font-weight: normal !important;
+  line-height: 1;
+  vertical-align: -0.125em;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sidebar-nav-icon .bi,
+.btn-icon .bi,
+.navbar-school .bi,
+.input-group-text .bi {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+/* Icon action buttons (tables, toolbars) */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 50rem;
+  line-height: 1;
+}
+
+.btn-icon.btn-sm {
+  min-width: 2.1rem;
+  min-height: 2.1rem;
+  padding: 0.3rem;
+}
+
+.btn-icon.btn-sm .bi {
+  font-size: 1rem;
+}
+
+.btn-icon .btn-icon-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Icon-only: circular, not empty rectangles */
+.btn-icon:not(:has(.btn-icon-text)) {
+  width: 2.35rem;
+  height: 2.35rem;
+  min-width: 2.35rem;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.btn-icon.btn-sm:not(:has(.btn-icon-text)) {
+  width: 2.1rem;
+  height: 2.1rem;
+  min-width: 2.1rem;
+}
+
+.table-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-bar-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.toolbar-icon-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
 .sidebar-backdrop {

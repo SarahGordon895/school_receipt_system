@@ -27,9 +27,9 @@ class ParentPaymentNotifier
 
         $receipt->loadMissing('paymentCategories');
 
-        $parentUser = User::where('email', $student->parent_email)
-            ->where('role', 'parent')
-            ->first();
+        $parentUser = $student->parent_user_id
+            ? User::query()->where('role', 'parent')->find($student->parent_user_id)
+            : null;
 
         if ($parentUser) {
             $parentUser->notify(new PaymentReceivedNotification($receipt, $student));

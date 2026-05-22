@@ -3,9 +3,7 @@
 
 @section('content')
     <div class="d-flex justify-content-end mb-3">
-        <a href="{{ route('receipts.index') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Back to Receipts
-        </a>
+        <x-icon-btn :href="route('receipts.index')" icon="bi-arrow-left" label="Back to receipts" variant="outline-secondary" :iconOnly="false" />
     </div>
 
     <div class="card">
@@ -80,9 +78,8 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <span class="fw-semibold">Payment Categories</span>
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addPaymentCategory()">
-                                    <i class="bi bi-plus me-1"></i> Add Category
-                                </button>
+                                <x-icon-btn type="button" icon="bi-plus-lg" label="Add payment category" variant="outline-primary" size="sm"
+                                    onclick="addPaymentCategory()" />
                             </div>
                             <div class="card-body">
                                 <div id="paymentCategoriesContainer">
@@ -146,12 +143,7 @@
                     </div>
                 </div>
 
-                <div class="d-flex gap-2 mt-4">
-                    <button type="submit" class="btn btn-primary" onclick="console.log('Button clicked');">
-                        <i class="bi bi-save me-1"></i> Save & Print
-                    </button>
-                    <a href="{{ route('receipts.index') }}" class="btn btn-outline-secondary">Cancel</a>
-                </div>
+                <x-form-actions :cancelUrl="route('receipts.index')" submitLabel="Save and print" submitIcon="bi-printer" />
             </form>
         </div>
     </div>
@@ -294,8 +286,8 @@ function addPaymentCategory() {
             </div>
         </div>
         <div class="col-md-12">
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePaymentCategory(this)">
-                <i class="bi bi-trash me-1"></i> Remove
+            <button type="button" class="btn btn-icon btn-outline-danger btn-sm" onclick="removePaymentCategory(this)" title="Remove category" aria-label="Remove category">
+                <i class="bi bi-trash" aria-hidden="true"></i>
             </button>
         </div>
     `;
@@ -356,42 +348,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('receiptForm');
         if (form) {
             form.addEventListener('submit', function(e) {
-                console.log('Form submission triggered');
-                
                 const categorySelects = document.querySelectorAll('.payment-category-select');
                 const amountInputs = document.querySelectorAll('.category-amount');
-                let isValid = true;
-                
-                console.log('Category selects found:', categorySelects.length);
-                console.log('Amount inputs found:', amountInputs.length);
-                
-                // Check if at least one category is selected with amount
                 let hasValidCategory = false;
+
                 categorySelects.forEach((select, index) => {
                     const amountInput = amountInputs[index];
-                    console.log(`Category ${index}:`, select.value, 'Amount:', amountInput.value);
-                    if (select.value && amountInput.value && parseFloat(amountInput.value) > 0) {
+                    if (select.value && amountInput?.value && parseFloat(amountInput.value) > 0) {
                         hasValidCategory = true;
                     }
                 });
-                
-                console.log('Has valid category:', hasValidCategory);
-                
+
                 if (!hasValidCategory) {
                     e.preventDefault();
                     alert('Please select at least one payment category and enter a valid amount.');
                     return false;
                 }
-                
-                // Update total amount hidden field before submission
+
                 updateTotalAmount();
-                console.log('Form will submit');
             });
-        } else {
-            console.error('Form not found');
         }
     } catch (error) {
-        console.error('JavaScript error:', error);
+        console.error('Receipt form error:', error);
     }
 });
 </script>

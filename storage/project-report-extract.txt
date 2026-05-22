@@ -1,0 +1,417 @@
+﻿
+UNIVERSITY OF DARES SALAAM
+2083435161925 
+
+ 
+ 
+ 
+COLLEGE OF INFORMATION AND COMMUNICATION  TECHNOLOGIES
+(CoICT)
+ 
+DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING
+ 
+FINAL YEAR PROJECT REPORT 2024/2025
+ 
+PROJECT TITLE: WEB BASED FEE TRACKING & REMINDER SYSTEM (FTRS)
+ 
+         NAME OF CANDIDATE: 1.  
+                                                      2.  
+                                                      3.    
+INNOCENT RICHARD MKUMBO.     2024-02-00404  
+  
+SARAH GEORGE GORDON.               2024-02-00133  
+  
+CHARLES DANI CHAULA.                 2024-02-00080  
+            NAME OF SUPERVISOR:  
+
+SIR PAUL HAULE  
+  
+       DEPARTMENT/COLLEGE:    
+Computer Science and Engineering,  
+College of Information and Communication Technology  
+       PROPOSED DEGREE:  
+Diploma in Computer Science  
+  
+ 
+ 
+ 
+ 
+DECLARATION
+ 
+We, SARAH GEORGE GORDON, CHARLES DANI CHAULA, INNOCENT RICHARD MKUMBO with registration numbers 2024-02-00133, 2024-02-00080,2024-02-00404.We declare that this report entitled “WEB BASED FEE TRACKING & REMINDER SYSTEM” is our work and has not been copied from other institution or someone else works.
+ 
+
+ABSTRACT
+ 
+The Fee Tracking & Reminder System project addresses the need for a dedicated online platform that enables users(Parents) to track and get notified their children’s (Students) payroll status . Unlike existing platforms that only  handle the students reports, FTRS focuses exclusively aiming to enhance parents reach on their children’s school life mostly in the financial aspect by providing a specialized platform. The system incorporates features such as user registration, Notification Management,Payment recording, and a report generation  with an emphasis on efficiency, user-friendliness, and security. The development follows the Waterfall methodology, ensuring a structured approach to requirement gathering, system design, implementation, and testing. This project signifies advancement in online auction technology, tailored to meet the specific needs of the electronics market.
+ 
+ 
+ACKNOWLEDGEMENT
+
+At first we would like to thank the Almighty God for granting the ability to persevere until now by giving us strength, opportunity and a sound mind to complete the Web Based Fee Tracking & Reminder System.
+We extend our heartfelt thanks to our supervisor, Sir Paul Haule, for his invaluable guidance and for giving us the opportunity to initiate this system. His encouragement and insightful feedback, along with his constant support, have significantly contributed to the completion of this work.
+Then we want to thank Mbonea Secondary School for the opportunity to interview them. We also extend our thanks to our colleagues as well as our lectures. We would like to thank the University of Dar-es-salaam for providing their library and internet facilities, from which we obtain an enormous amount of information 
+
+
+
+TABLE OF CONTENT
+ TOC \o "1-3" \h \z \u DECLARATION PAGEREF _Toc230035559 \h 2
+ABSTRACT PAGEREF _Toc230035560 \h 3
+CHAPTER 1 : INTODUCTION PAGEREF _Toc230035561 \h 5
+1.1 GENERAL INTRODUCTION (MOTIVATION & BACKGROUND) PAGEREF _Toc230035562 \h 5
+1.2  STATEMENT OF THE PROBLEM PAGEREF _Toc230035563 \h 5
+1.3 PROJECT OBJECTIVES PAGEREF _Toc230035564 \h 6
+1.4 SIGNIFICANCE OF THE PROJECT PAGEREF _Toc230035565 \h 7
+1.5 STAKEHOLDERS DESCRIPTIONS PAGEREF _Toc230035566 \h 7
+CHAPTER 2: LITERATURE REVIEW PAGEREF _Toc230035567 \h 8
+2.1 Introduction PAGEREF _Toc230035568 \h 8
+2.2 Overview of Educational Management Systems PAGEREF _Toc230035569 \h 8
+2.3 The Impact of Automated Notifications on Payment Behavior PAGEREF _Toc230035570 \h 8
+2.4 Technologies Used PAGEREF _Toc230035571 \h 8
+2.5 Challenges in Existing Systems PAGEREF _Toc230035572 \h 9
+2.6 Research Gap PAGEREF _Toc230035573 \h 9
+2.7 Summary PAGEREF _Toc230035574 \h 9
+CHAPTER 3: METHODOLOGY PAGEREF _Toc230035575 \h 9
+3.1 Requirement Gathering and Analysis PAGEREF _Toc230035576 \h 9
+3.2 System Design PAGEREF _Toc230035577 \h 9
+3.3 Implementation (Coding) PAGEREF _Toc230035578 \h 10
+CHAPTER 4: PROJECT PLAN: PAGEREF _Toc230035579 \h 10
+4.1. Activity/Duration. PAGEREF _Toc230035580 \h 10
+4.2 Distribution of work among group members. PAGEREF _Toc230035581 \h 12
+4.3 BUDGETORY PLANNING PAGEREF _Toc230035582 \h 13
+4.4 Testing Phase PAGEREF _Toc230035583 \h 14
+CHAPTER 5: REQUIREMENT ANALYSIS PAGEREF _Toc230035584 \h 14
+Functional requirements. PAGEREF _Toc230035585 \h 15
+Non-functional requirements. PAGEREF _Toc230035586 \h 15
+CHAPTER 6: SYSTEM DESIGN PAGEREF _Toc230035587 \h 16
+USER CASE DIAGRAM PAGEREF _Toc230035588 \h 16
+ACTIVITY DIAGRAM. PAGEREF _Toc230035589 \h 17
+CLASS DIAGRAM. PAGEREF _Toc230035590 \h 19
+SEQUENCE DIAGRAM PAGEREF _Toc230035591 \h 19
+Entity-relationship diagram(ERD) PAGEREF _Toc230035592 \h 21
+CONCLUSION PAGEREF _Toc230035593 \h 22
+
+
+
+
+
+
+
+
+
+
+CHAPTER 1 : INTODUCTION
+  
+1.1 GENERAL INTRODUCTION (MOTIVATION & BACKGROUND)  
+In many secondary schools in Tanzania, fee management is still handled using manual methods such as receipt books, notebooks, and spreadsheets. These methods are time-consuming, error-prone, and make it difficult to keep accurate records. Communication about fees is often done verbally or through students, which is unreliable and may lead to misinformation.  
+Parents are frequently not informed about fee balances, payment deadlines, or overdue amounts until problems arise. As schools grow in student population, managing fees manually becomes increasingly difficult. This project is motivated by the need for a simple digital solution that allows schools to track fees efficiently while enabling parents to view bills, make payments, and receive timely reminders using modern web technologies.  
+  
+  
+1.2  STATEMENT OF THE PROBLEM  
+Despite the increasing adoption of information systems in educational institutions, many secondary schools in Tanzania still rely on manual or semi-manual methods for managing student fee records. In these schools, fee management processes are characterized by poor data centralization, delayed communication with parents, and inefficient tracking of student payments. These challenges negatively affect school revenue management, administrative efficiency, and parent satisfaction.  
+ 
+ 
+Financial Inefficiency: The lack of a centralized fee tracking system makes it difficult for schools to clearly identify paid and unpaid fees. Delayed updates of balances and penalties lead to revenue loss and poor financial planning.  
+Administrative Overload: Manual recording of payments increases workload for school staff and leads to errors, missing records, and delayed updates of student fee information.  
+Communication Gap: Parents often do not receive timely fee information and rely on students for updates, which can be inaccurate. The lack of automated reminders results in late payments and fee arrears.  
+Lack of Transparency and Accessibility: Parents do not have real-time access to fee balances, payment history, or fee structures, causing misunderstandings and frequent visits to the school for clarification.  
+ 
+In summary, the absence of an integrated, automated system results in delayed revenue cycles, high operational costs, and a poor user experience, necessitating a digital solution that synchronizes payment processing with automated reminders.  
+  
+1.3 PROJECT OBJECTIVES
+ 
+MAIN OBJECTIVE  
+To design and develop a web-based student fee tracking and reminder system that enables secondary schools to manage fee records efficiently and communicate payment information directly to parents through SMS and email.  
+ 
+ 
+SPECIFIC OBJECTIVES 
+To achieve the general goal, the project will focus on the following milestones: 
+To perform a requirements analysis by identifying the specific financial data points, user roles, and notification triggers required for secondary school fee management in the Tanzanian context. 
+To design a centralized MySQL database and system architecture that securely stores student profiles, parent contact information, and fee structures while maintaining data integrity. 
+To develop a web-based back end using the Laravel framework capable of calculating real-time balances and processing digital transactions with automated timestamped receipts. 
+To implement a responsive user interface and role-based access control that allows Admins to manage records and Parents to view financial history across both desktop and mobile devices. 
+ 
+  
+1.4 SIGNIFICANCE OF THE PROJECT 
+The implementation of the Web-Based Fee Tracking & Reminder System carries significant value for the education sector in Tanzania: 
+For School Management: ensure the school stuff to keep track of the students fee payment and collection via parents directly through SMS and Email alert, and not via student as the medium to get through to the parent. 
+For Parents:  ensuring parents have direct access to the students fee portfolio and awareness on the Fee collection per the school administrative structure  
+For Academic Continuity: By streamlining fee collection, ensuring that students' learning processes are not hindered by financial administrative delays. 
+Technical Contribution: This project serves as a practical application of Laravel framework and SMS and Email integration to solve a community-level problem. 
+ 
+1.5 STAKEHOLDERS DESCRIPTIONS 
+Stakeholders are individuals or groups that have an interest in the Web-Based Fee Tracking & Reminder System or are affected by its development and use. The key stakeholders involved in this project are described below. 
+Super Admin  
+The Super Admin is typically the system developer or a high-level IT officer. Their role is Managing system updates, configuring the SMS/Email API gateways, performing database backups, and creating the initial accounts for School Admins. 
+School Admin  
+This role is usually assigned to the (Bursar, Headmaster, or Academic Master). They set the fee structures (e.g., how much tuition is for Form I vs. Form IV), register new students, and manually input payment data when a parent provides a bank slip. They are also responsible for generating the monthly reports that show who has paid and who hasn't.
+ 3. Parents/Guardians  
+Parents are the external stakeholders. They use the system to check their child's current balance without having to travel to the school. Their primary "interaction" is often passive—receiving the automated SMS alerts that remind them of upcoming deadlines or confirming that a payment has been received. 
+4. Students  
+• While students may not have a login account in a basic fee system, The data managed by the system directly affects them. Accurate records ensure that a student isn't accidentally sent home for fees they have already paid. In more advanced versions, students might use the system to print their own "financial clearance" forms before exams. 
+ 
+
+
+ CHAPTER 2: LITERATURE REVIEW 
+ 2.1 Introduction 
+In Tanzania, many schools face loss of financial data of students leading to , confusion, overcrowding, and service inefficiencies, mainly due to manual recording of data and transaction made. Ineffective systems increase staff workload. This review focuses on educational management systems in Tanzanian schools. 
+ 
+2.2 Overview of Educational Management Systems 
+According to Al-Mamary (2020), the adoption of Management Information Systems (MIS) in educational institutions is no longer a luxury but a necessity for operational efficiency. Globally, schools have transitioned from paper-based ledgers to automated systems to manage student data.  However, many systems focus heavily on academic performance (grading) while neglecting the financial integration required for sustainable school operations 
+ 
+2.3 The Impact of Automated Notifications on Payment Behavior 
+A study in financial technology suggests that timely reminders significantly alter payment behavior. In the context of school fees, parents often miss deadlines not due to a lack of funds, but due to forgetfulness or a lack of clear information regarding the exact balance. By utilizing Short Message Service (SMS) and Email notifications, schools can provide a "nudge" that reduces late payments by an estimated 25–40%. 
+ 
+2.4 Technologies Used 
+Studies show that Web Based Fee Tracking & Reminder System use web-based platforms, databases for storing patient information, and mobile technologies such as SMS and Email notifications for reminders. 
+2.5 Challenges in Existing Systems 
+Existing fee management systems in many secondary schools are costly, they depend on manual processes, and lack effective communication with guardians. The absence of automated reminders leads to late payments, while limited system accessibility reduces transparency of fee information. Additionally, system complexity and limited technical skills among school staff make existing solutions difficult to use and poorly adopted. 
+
+2.6 Research Gap 
+Although these management systems improve educational and information efficiency in schools, Most Tanzanian schools still rely mostly in manual recording of transactions, since existing systems are expensive, complex or designed for bigger schools and afraid of sharing of confidential data. 
+ 
+2.7 Summary 
+This project fills the gap by providing a lightweight, focused, and cost-effective solution specifically designed for the fee-tracking and communication needs of Tanzanian secondary schools. 
+
+  CHAPTER 3: METHODOLOGY 
+The project will follow the Agile Methodology. This allows us to build the core fee-tracking engine first, then layer the notification services (SMS and Email) on top through iterative cycles. 
+3.1 Requirement Gathering and Analysis 
+We will identify the specific data points needed for communication: 
+Contact Data: Ensuring the database captures both valid phone numbers for SMS and verified email addresses for digital receipts. 
+Trigger Events: Defining when notifications should be sent  
+3.2 System Design 
+The design phase will focus on the bellow. 
+Database Design:The parents able will include fields for phone_number and email_address. 
+Logic Design: We will design a "Notification Controller" in Laravel that determines whether to send an SMS, an Email, or both, based on the urgency of the message. 
+3.3 Implementation (Coding) 
+The technical stack is expanded to handle dual-channel communication: 
+Backend: Laravel. We will utilize Laravel's built-in Notification System, which allows sending messages across different "channels" simultaneously. 
+SMS Integration: Using an external API to send text alerts. 
+Email Integration: Configuring SMTP using services of Gmail servers to send professional fee statements and receipts. 
+Database: MySQL to store the logs of sent messages to ensure no parent is notified twice for the same event. 
+ 
+  
+CHAPTER 4: PROJECT PLAN:
+ 
+4.1. Activity/Duration. 
+The project will be implemented over a period of 8 weeks using agile methodology. The development process will follow structured phases to ensure systematic completion of the system. 
+Activity breakdown and Duration. 
+Week 1-2: Requirements Gathering and system Design. 
+During this phase, our group will collect detailed system requirements by identifying user roles (super Admin, school Admin, Parents), required data fields (student details, fee structure, payments), and notification triggers. 
+Week 3-8: System development. 
+This phase focuses on the actual development of the system; -Front-end interfaces will be developed. 
+-Back-end logic and database implementation will be done. 
+-Fee calculation logic will be implemented. 
+-Both front-end and back-end components will be developed simultaneously to save time. 
+Week 9: SMS and Email Integration. 
+This factional phase will involve; 
+In this stage; 
+-SMS API will be integrated. 
+-Email (SMPT) configuration will be implemented. 
+-Notification triggers will be tested to ensure reminders are sent correctly. 
+Week 10: Testing and Final Improvements. 
+Final phase will involve; 
+-System testing (functional testing and user testing) 
+-Bug fixing and debugging. 
+-Performance optimization. 
+-Final documentation preparation. 
+ 
+  INCLUDEPICTURE "/Users/marymitula/Library/Containers/com.kingsoft.wpsoffice.mac.global/Data/tmp/wps-marymitula/ksohtml/wps1.jpg" \* MERGEFORMATINET 
+ 
+Activity 
+Week 
+Start Date 
+Duration 
+End Date 
+Requirements and Design 
+Week 1-2 
+23-Mar-26 
+14 
+06-Apr-26 
+System 
+Development 
+Week 3-8 
+06-Apr-26 
+42 
+18-May-26 
+SMS and 
+Email 
+Integration 
+Week 9 
+18-May-26 
+7 
+25-May-26 
+Testing and final 
+improvements 
+Week 10 
+25-May-26 
+7 
+01-Jun-26 
+ 
+4.2 Distribution of work among group members. 
+The project tasks will be distributed to three group members (Charles, Innocent, Sarah) according to the specialization areas to ensure efficiency and quality development. 
+1. INNOCENT RICHARD MKUMBO- frontend Developer. 
+Innocent will focus on the visual and user interaction part of the system. His responsibilities include: 
+-Designing system interfaces (UI layout). 
+-Developing web pages using HTML and CSS. 
+-Assisting in front-end testing and interface improvements. 
+                   2.CHARLES DANI CHAULA- front-end Developer. 
+Charles will work together with Innocent on frontend implementations. His responsibilities will include: 
+-Implementing JavaScript functionalities. 
+-Enhancing user experience (from validation, dynamic content). 
+-Connecting frontend pages with backend routes. 
+-Supporting debugging and interface optimization. 
+Both Innocent and Charles will collaborate closely to complete the front-end and modules. 
+                   3.SARAH GEORGE GORDON- Backend Developer. 
+Sarah will handle all backend operations of the system. Her responsibilities will include: -Designing and implementing the MySQL database. 
+-Developing backend logic using Laravel framework. 
+-Implementing fee calculation and algorithms. 
+-Integrating SMS API and Email (SMPT) services. 
+-Implementing user authentication and system security. 
+-Managing system testing from backend perspective. 
+She will ensure the system functions correctly, securely and efficiently. 
+ 
+ 
+4.3 BUDGETORY PLANNING 
+Since the system is currently developed and tested in a localhost environment, there are no costs for online hosting or domain registration. The budget is divided into Direct Project Costs (for the academic submission) and Technical Requirement Costs (for local school setup). 
+Table 1: Direct Project Development Costs (Academic) 
+These are the out-of-pocket expenses incurred by the group to complete the project for UDSM requirements. 
+Item Description 
+Quantity 
+Total Cost 
+Internet Bundles 
+20GB 
+20,000 
+Proposal printing and binding  
+3 copies  
+15,000 
+System backup 
+1(16) GB 
+15,000 
+Transport  
+Lump sum 
+30,000 
+ 
+ 
+ 
+ 
+Table 2: Localhost Implementation Requirements  
+To run this system at a secondary school without the internet, the school would need the following local infrastructure. 
+Item Description 
+Minimum requirement 
+Estimated Cost 
+Server PC/ laptop 
+Core i3, 8GB RAM (To host XAMPP/MySQL) 
+650,000 
+SMS Gateway modem 
+USB modem 
+50,000 
+SMS Integration 
+API, Sandbox, Sender ID 
+100,000 
+SUB TOTAL 
+ 
+800,000 
+ 
+ 
+4.4 Testing Phase 
+Testing will be more rigorous to ensure both channels work: 
+: SMS and Email Delivery Test: Verifying that text messages and email are delivered within the time frame scheduled according to the parent’s details and fee structure. 
+ 
+   Reference: 
+Al-Mamary, Y. H. (2020). The Adoption of Management Information Systems in Educational Institutions. 
+Lwoga, E. T. (2014). Critical success factors for adoption of web-based systems in Tanzania. 
+Rogers, E. M. (2003). Diffusion of Innovations. (To explain why schools are moving toward digital systems). 
+ 
+ 
+CHAPTER 5: REQUIREMENT ANALYSIS
+The requirements gathering are the process of interacting with the stakeholders to discover their requirements. It involves communication between parties involved in the problem using tools such as interviews, meetings and fact findings where the sources are people such as the end user and other stakeholders. 
+
+From the questions and responses provided by the stakeholders, enable us to generate requirements that make up the system functionalities. The system functions can be categorized into Functional Requirements (what the system should do) and Non-Functional Requirements (how it should perform).
+Functional requirements.
+Functionality requirements are capabilities and features that a system provides to fulfill its intended purpose or objectives. In the context of web-based fee tracking and reminder system, functionality would encompass all the operations and interactions that users can perform within the system. Such functionality is as listed below.
+Student registration
+The system shall allow the school admin to register new students by entering details such as student name, class, and parent information.
+Fee structure management
+The system shall enable school Admin to define and manage fee structures for different classes.
+Payment recording
+The system shall allow school admin to record student fee payments.
+Notification management
+The system shall send notifications to parents via SMS and email when a payment is recorded, a balance is due, and payment deadline is approaching 
+Report generation
+The system shall generate reports for the school Admin showing paid students, unpaid students, and payment summaries
+ 
+Non-functional requirements.
+Non-functional requirements describe the quality attributes and performance standards of the system. They are the qualities of the system. The following are the non-functional
+requirements of the system based on this project.
+CATEGORY
+DESCRIPTION
+Performance
+The system should process transactions quickly.
+User friendly
+The system should be easy to use for both administrators and parents.
+scalability
+The system should support increasing number of students.
+ 
+CHAPTER 6: SYSTEM DESIGN
+Scenario is the description of the use case of the system. It elaborates how the user will interact with the system in order to fulfill the stated user requirements. This is where the user will experience the functionality of the system. Here is the short description of the system Use case is the definition of a certain activity that the system needs to accomplish. It specifies the action that a role or actor can interact with the system to archive a goal.
+USER CASE DIAGRAM
+
+ INCLUDEPICTURE "/Users/marymitula/Library/Containers/com.kingsoft.wpsoffice.mac.global/Data/tmp/wps-marymitula/ksohtml/wps2.jpg" \* MERGEFORMATINET  
+ 
+
+ 
+ACTIVITY DIAGRAM.
+Activity diagram will show how functions are performed or done, the step-by-step flow of actions, decisions and processes.
+ INCLUDEPICTURE "/Users/marymitula/Library/Containers/com.kingsoft.wpsoffice.mac.global/Data/tmp/wps-marymitula/ksohtml/wps3.png" \* MERGEFORMATINET 
+
+
+
+ 
+CLASS DIAGRAM.
+A class diagram shows the structure of a system by displaying its classes, their attributes and how classes are related to each other.
+ INCLUDEPICTURE "/Users/marymitula/Library/Containers/com.kingsoft.wpsoffice.mac.global/Data/tmp/wps-marymitula/ksohtml/wps4.png" \* MERGEFORMATINET  
+ 
+SEQUENCE DIAGRAM.
+A sequence diagram shows how objects or components interact with each other in a specific time order, from top to bottom. It answers the question “Who sends what message to who, and when?”
+
+ INCLUDEPICTURE "/Users/marymitula/Library/Containers/com.kingsoft.wpsoffice.mac.global/Data/tmp/wps-marymitula/ksohtml/wps5.png" \* MERGEFORMATINET  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Entity-relationship diagram(ERD)
+An entity-relationship diagram is visual representation of the database structure of the system.It shows the main data objects stored in the system, their details and how they connect to each other.
+For this project ERD is designed to organize all information related to students,parents, fee structures,payments,users and notifications.The following is an entity-relationship diagram of this project.
+AN ENTITY RELATIONSHIP DIAGRAM
+The entity relationship diagram was used to visualize the pairing (ERD)
+The entity Relationship Diagram depicted in the image depict the whole process flow 
+
+ INCLUDEPICTURE "/Users/marymitula/Library/Containers/com.kingsoft.wpsoffice.mac.global/Data/tmp/wps-marymitula/ksohtml/wps6.jpg" \* MERGEFORMATINET  
+
+ 
+CONCLUSION 
+The proposed Web-Based Fee Tracking & Reminder System represents a significant step toward the digitalization of administrative processes in Tanzanian secondary schools. By transitioning from prone-to-error manual ledgers to a centralized, automated platform, schools can ensure higher financial transparency and significantly reduce revenue leakage. 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+  
+  
+  
+  
+        
+  
+  
+  
+  
+

@@ -2,26 +2,31 @@
 @section('title','Students')
 
 @section('actions')
-  <a href="{{ route('students.import.form') }}" class="btn btn-outline-primary"><i class="bi bi-file-earmark-arrow-up me-1"></i> Import</a>
-  <a href="{{ route('students.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Add Student</a>
+  <div class="page-actions">
+    <x-icon-btn :href="route('students.import.form')" icon="bi-file-earmark-arrow-up" label="Import students"
+      variant="outline-primary" :iconOnly="false" />
+    <x-icon-btn :href="route('students.create')" icon="bi-person-plus" label="Add student" variant="primary"
+      :iconOnly="false" />
+  </div>
 @endsection
 
 @section('content')
 <div class="card mb-3">
   <div class="card-body">
-    <form method="GET" class="row g-2">
-      <div class="col-12 col-md-6">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-12 col-md-8">
         <label class="form-label small text-muted mb-1">Search</label>
         <div class="input-group">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input type="text" name="q" value="{{ $q }}" class="form-control" placeholder="Student name">
+          <input type="text" name="q" value="{{ $q }}" class="form-control" placeholder="Student name or admission no">
         </div>
       </div>
-      <div class="col-12 col-md-2 d-grid">
-        <button class="btn btn-primary"><i class="bi bi-funnel me-1"></i> Go</button>
-      </div>
-      <div class="col-12 col-md-2 d-grid">
-        <a href="{{ route('students.index') }}" class="btn btn-outline-secondary">Reset</a>
+      <div class="col-12 col-md-4">
+        <div class="filter-bar-actions">
+          <x-icon-btn type="submit" icon="bi-funnel-fill" label="Apply filters" variant="primary" />
+          <x-icon-btn :href="route('students.index')" icon="bi-arrow-counterclockwise" label="Reset filters"
+            variant="outline-secondary" />
+        </div>
       </div>
     </form>
   </div>
@@ -32,7 +37,7 @@
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
-          <tr><th>Student</th><th>Class</th><th>Parent Contact</th><th class="text-end">Balance</th><th class="text-end">Actions</th></tr>
+          <tr><th>Student</th><th>Class</th><th>Parent / Guardian</th><th class="text-end">Balance</th><th class="text-end">Actions</th></tr>
         </thead>
         <tbody>
           @forelse($students as $s)
@@ -44,7 +49,11 @@
               <td>{{ $s->class_name ?? '—' }}</td>
               <td>
                 <div>{{ $s->parent_name ?? 'N/A' }}</div>
-                <div class="small text-muted">{{ $s->parent_phone ?? 'No phone' }}{{ $s->parent_email ? ' • '.$s->parent_email : '' }}</div>
+                @if($s->parentUser)
+                  <div class="small text-success"><i class="bi bi-link-45deg me-1"></i>{{ $s->parentUser->email }}</div>
+                @else
+                  <div class="small text-muted">{{ $s->parent_phone ?? 'No phone' }}{{ $s->parent_email ? ' • '.$s->parent_email : '' }}</div>
+                @endif
               </td>
               <td class="text-end">
                 <span class="{{ $s->balance > 0 ? 'text-danger fw-semibold' : 'text-success fw-semibold' }}">
@@ -52,15 +61,14 @@
                 </span>
               </td>
               <td class="text-end">
-                <a href="{{ route('students.edit',$s) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                <form action="{{ route('students.destroy',$s) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete student?')">
-                  @csrf @method('DELETE')
-                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                </form>
+                <x-table-actions
+                  :edit="route('students.edit', $s)"
+                  :delete="route('students.destroy', $s)"
+                  deleteConfirm="Delete this student and related records?" />
               </td>
             </tr>
           @empty
-            <tr><td colspan="4" class="text-center text-muted py-4">No students yet.</td></tr>
+            <tr><td colspan="5" class="text-center text-muted py-4">No students yet.</td></tr>
           @endforelse
         </tbody>
       </table>

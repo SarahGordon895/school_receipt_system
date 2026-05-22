@@ -2,24 +2,26 @@
 @section('title','Fee Structures')
 
 @section('actions')
-  <a href="{{ route('fee-structures.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Add Fee Structure</a>
+  <x-icon-btn :href="route('fee-structures.create')" icon="bi-plus-lg" label="Add fee structure" variant="primary"
+    :iconOnly="false" />
 @endsection
 
 @section('content')
 <div class="card mb-3">
   <div class="card-body">
-    <form method="GET" class="row g-2">
-      <div class="col-12 col-md-6">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-12 col-md-8">
         <div class="input-group">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
           <input type="text" name="q" value="{{ $q }}" class="form-control" placeholder="Search fee structure name">
         </div>
       </div>
-      <div class="col-6 col-md-2 d-grid">
-        <button class="btn btn-primary">Go</button>
-      </div>
-      <div class="col-6 col-md-2 d-grid">
-        <a href="{{ route('fee-structures.index') }}" class="btn btn-outline-secondary">Reset</a>
+      <div class="col-12 col-md-4">
+        <div class="filter-bar-actions">
+          <x-icon-btn type="submit" icon="bi-funnel-fill" label="Search" variant="primary" />
+          <x-icon-btn :href="route('fee-structures.index')" icon="bi-arrow-counterclockwise" label="Reset"
+            variant="outline-secondary" />
+        </div>
       </div>
     </form>
   </div>
@@ -52,11 +54,10 @@
                 </span>
               </td>
               <td class="text-end">
-                <a href="{{ route('fee-structures.edit', $feeStructure) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                <form action="{{ route('fee-structures.destroy', $feeStructure) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete fee structure?')">
-                  @csrf @method('DELETE')
-                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                </form>
+                <x-table-actions
+                  :edit="route('fee-structures.edit', $feeStructure)"
+                  :delete="route('fee-structures.destroy', $feeStructure)"
+                  deleteConfirm="Delete this fee structure?" />
               </td>
             </tr>
           @empty

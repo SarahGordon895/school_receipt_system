@@ -9,7 +9,7 @@
     <form method="POST" action="{{ route('students.import.store') }}" enctype="multipart/form-data" class="d-flex gap-2">
       @csrf
       <input type="file" name="file" accept=".xlsx,.csv,.txt" class="form-control" required>
-      <button class="btn btn-primary"><i class="bi bi-upload me-1"></i> Import</button>
+      <x-icon-btn type="submit" icon="bi-upload" label="Import students" variant="primary" :iconOnly="false" />
     </form>
   </div>
 </div>

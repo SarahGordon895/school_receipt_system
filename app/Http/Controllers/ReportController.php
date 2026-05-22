@@ -7,6 +7,7 @@ use App\Models\Receipt;
 use App\Models\Student;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ReceiptsReportExport;
 
@@ -180,5 +181,17 @@ class ReportController extends Controller
         ];
 
         return view('reports.unpaid', compact('students', 'summary'));
+    }
+
+    public function sendReminders(Request $request)
+    {
+        $request->validate([
+            'days' => ['nullable', 'integer', 'min:0', 'max:30'],
+        ]);
+
+        $days = (int) ($request->input('days', 3));
+        Artisan::call('fees:send-reminders', ['--days' => $days]);
+
+        return back()->with('status', 'Fee reminders have been queued and sent where applicable.');
     }
 }

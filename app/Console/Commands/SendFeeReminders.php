@@ -25,7 +25,8 @@ class SendFeeReminders extends Command
         $targetDate = now()->addDays($days)->toDateString();
 
         $students = Student::withSum('receipts', 'amount')
-            ->whereNotNull('parent_email')
+            ->whereNotNull('parent_user_id')
+            ->whereHas('primaryParentLink')
             ->whereNotNull('fee_due_date')
             ->whereDate('fee_due_date', '<=', $targetDate)
             ->get();
@@ -37,9 +38,9 @@ class SendFeeReminders extends Command
                 continue;
             }
 
-            $parentUser = User::where('email', $student->parent_email)
+            $parentUser = User::query()
                 ->where('role', 'parent')
-                ->first();
+                ->find($student->parent_user_id);
 
             if (!$parentUser) {
                 continue;

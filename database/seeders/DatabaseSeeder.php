@@ -40,6 +40,6 @@ class DatabaseSeeder extends Seeder
             'role' => 'parent',
         ]);
 
-        
+        $this->call(DemoDataSeeder::class);
     }
 }

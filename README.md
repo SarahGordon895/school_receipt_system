@@ -1,61 +1,108 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Web Based Fee Tracking & Reminder System (FTRS)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel application for **Mbonea Secondary School** (UDSM IS098 project): track student fees, record payments, notify parents via SMS/email, and generate reports.
 
-## About Laravel
+## Requirements
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.2+
+- Composer
+- MySQL/MariaDB (XAMPP)
+- Node.js (optional, for Vite assets on auth pages)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Quick install (Windows / XAMPP)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. Copy `.env.example` to `.env` and set database credentials:
 
-## Learning Laravel
+```env
+DB_DATABASE=school_receipts
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+2. Generate app key and install:
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+```cmd
+composer install
+php artisan key:generate
+install.cmd
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Or without the batch file:
 
-## Laravel Sponsors
+```cmd
+php artisan ftrs:install
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+For a clean database:
 
-### Premium Partners
+```cmd
+install.cmd --fresh
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+3. Start the server:
 
-## Contributing
+```cmd
+serve.cmd
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Open http://127.0.0.1:8088 (this project uses port **8088** to avoid clashing with other Laravel apps on 8000)
 
-## Code of Conduct
+## Demo accounts
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | superadmin@school.tz | password |
+| School Admin | admin@school.tz | password |
+| Parent (1 child — Mkumbo) | parent.mkumbo@school.tz | password |
+| Parent (1 child — Gordon) | parent.gordon@school.tz | password |
+| Parent (1 child — Chaula) | parent.chaula@school.tz | password |
 
-## Security Vulnerabilities
+Demo data includes students, fee structures, sample receipts, and outstanding balances.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Main features
+
+- **Students** — register, import, link fee structures
+- **Fee structures** — class-based expected fees and due dates
+- **Receipts** — multi-category payments, PDF/print
+- **Reports** — paid/unpaid, Excel/PDF export
+- **Notifications** — email + SMS on payment; scheduled fee reminders
+- **Parent portal** — balances, payment history, notifications
+- **Settings** — school profile, receipt footer, SMS API (or simulate mode)
+
+## SMS configuration
+
+1. Admin → **Settings** → SMS Notifications
+2. Enable SMS; use **Simulate SMS** on localhost (messages logged to `storage/logs/laravel.log`)
+3. For production: set API endpoint, token, sender ID (or use `.env` `SMS_*` variables)
+
+Send reminders manually: **Reports → Unpaid report → Send reminders**
+
+Automatic reminders (daily 07:00):
+
+```cmd
+php artisan schedule:work
+```
+
+Or one-off:
+
+```cmd
+php artisan fees:send-reminders --days=3
+```
+
+## Tests
+
+```cmd
+php artisan test
+```
+
+## Project structure
+
+- `app/Http/Controllers` — admin, parent, reports
+- `app/Services/SmsService.php` — SMS with settings + simulate mode
+- `app/Console/Commands/SendFeeReminders.php` — reminder job
+- `database/seeders/DemoDataSeeder.php` — demo walkthrough data
+- `resources/views` — Bootstrap UI with icon actions
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT (Laravel framework). Project work: UDSM CoICT — IS098 2024/2025.

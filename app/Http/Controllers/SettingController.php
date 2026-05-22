@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 
 class SettingController extends Controller
@@ -24,9 +25,21 @@ class SettingController extends Controller
             'logo' => ['nullable', 'image', 'max:2048'],
             'remove_logo' => ['nullable', 'boolean'],
             'receipt_footer' => ['nullable', 'string', 'max:1000'],
+            'sms_enabled' => ['nullable', 'boolean'],
+            'sms_simulate' => ['nullable', 'boolean'],
+            'sms_api_endpoint' => ['nullable', 'string', 'max:500'],
+            'sms_api_token' => ['nullable', 'string', 'max:500'],
+            'sms_sender_id' => ['nullable', 'string', 'max:32'],
+            'sms_test_phone' => ['nullable', 'string', 'max:50'],
         ]);
 
         $setting = Setting::firstOrCreate([]);
+
+        $data['sms_enabled'] = $request->boolean('sms_enabled');
+        $data['sms_simulate'] = $request->boolean('sms_simulate');
+        if (empty($data['sms_api_token'])) {
+            unset($data['sms_api_token']);
+        }
 
         if ($request->boolean('remove_logo')) {
             if ($setting->logo_path && \Storage::disk('public')->exists($setting->logo_path)) {
@@ -40,7 +53,18 @@ class SettingController extends Controller
 
         $setting->update($data);
 
+        if ($request->filled('sms_test_phone')) {
+            $ok = app(SmsService::class)->send(
+                $request->input('sms_test_phone'),
+                'FTRS test SMS from ' . ($setting->school_name ?? 'School') . '. Configuration is working.'
+            );
+
+            return back()->with(
+                'status',
+                $ok ? 'Settings saved. Test SMS was sent (or simulated — check storage/logs).' : 'Settings saved, but test SMS failed. Check SMS settings and logs.'
+            );
+        }
+
         return back()->with('status', 'Settings updated.');
     }
-
 }

@@ -23,8 +23,7 @@
         </div>
       </div>
       <div class="d-flex gap-2 mt-3">
-        <button class="btn btn-primary"><i class="bi bi-save me-1"></i> Update</button>
-        <a href="{{ route('payment-categories.index') }}" class="btn btn-outline-secondary">Cancel</a>
+        <x-form-actions :cancelUrl="route('payment-categories.index')" submitLabel="Update category" submitIcon="bi-check-lg" />
       </div>
     </form>
   </div>

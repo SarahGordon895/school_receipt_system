@@ -46,9 +46,12 @@
                     <option value="skipped" @selected(($filters['status'] ?? '') === 'skipped')>Skipped</option>
                 </select>
             </div>
-            <div class="col-12 col-md-6 d-flex align-items-end gap-2">
-                <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1"></i> Apply</button>
-                <a href="{{ route('notification-logs.index') }}" class="btn btn-outline-secondary">Reset</a>
+            <div class="col-12 col-md-6 d-flex align-items-end">
+                <div class="filter-bar-actions">
+                    <x-icon-btn type="submit" icon="bi-funnel-fill" label="Apply filters" variant="primary" />
+                    <x-icon-btn :href="route('notification-logs.index')" icon="bi-arrow-counterclockwise" label="Reset filters"
+                        variant="outline-secondary" />
+                </div>
             </div>
         </form>
     </div>
