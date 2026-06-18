@@ -12,7 +12,6 @@ class ParentStudentAdmission
 {
     /**
      * Official school admission link between a registered student and parent portal account.
-     * Aligns with project report: student registration includes parent information for direct communication.
      */
     public static function linkGuardian(
         Student $student,
@@ -41,7 +40,7 @@ class ParentStudentAdmission
                         ? $relationship
                         : 'Guardian',
                     'is_primary' => $isPrimary,
-                    'parent_phone' => $parentPhone ?: $student->parent_phone,
+                    'parent_phone' => $parentPhone ?? $student->parent_phone,
                     'linked_by_user_id' => $linkedByUserId,
                     'linked_at' => $student->admitted_at ?? now(),
                 ]
@@ -68,15 +67,34 @@ class ParentStudentAdmission
             return $student;
         }
 
+        $parentUser = $primary->parentUser;
+        $parentPhone = filled($primary->parent_phone)
+            ? $primary->parent_phone
+            : ($student->parent_phone ?: $parentUser->phone);
+
+        // Only sync linkage + phone. parent_email and parent_name are managed on the student form.
         $student->forceFill([
             'parent_user_id' => $primary->parent_user_id,
-            'parent_email' => $primary->parentUser->email,
-            'parent_name' => $student->parent_name ?: $primary->parentUser->name,
-            'parent_phone' => $primary->parent_phone ?: $student->parent_phone,
+            'parent_phone' => $parentPhone,
         ]);
         $student->save();
 
-        return $student;
+        if (filled($parentPhone)) {
+            $normalizedPhone = User::normalizePhone($parentPhone);
+            if ($parentUser->phone !== $normalizedPhone) {
+                $parentUser->forceFill(['phone' => $normalizedPhone])->save();
+            }
+        }
+
+        return $student->fresh();
+    }
+
+    public static function updateParentPortalEmail(int $parentUserId, string $email): User
+    {
+        $parent = User::query()->where('role', 'parent')->findOrFail($parentUserId);
+        $parent->forceFill(['email' => strtolower($email)])->save();
+
+        return $parent->fresh();
     }
 
     public static function ensurePrimaryLinkExists(Student $student): void

@@ -1,35 +1,11 @@
 @php
     $guestPage = match (\Illuminate\Support\Facades\Route::currentRouteName()) {
-        'register' => [
-            'title' => __('Register'),
-            'heading' => __('New staff account'),
-            'intro' => __('Create your account to access receipts, reports, and student records.'),
-        ],
-        'password.request' => [
-            'title' => __('Password help'),
-            'heading' => __('Reset your password'),
-            'intro' => __('We will email you a secure link to choose a new password.'),
-        ],
-        'password.reset' => [
-            'title' => __('New password'),
-            'heading' => __('Set a new password'),
-            'intro' => __('Choose a strong password to protect school financial data.'),
-        ],
-        'verification.notice' => [
-            'title' => __('Verify email'),
-            'heading' => __('Confirm your email'),
-            'intro' => __('Please verify your email address before using the system.'),
-        ],
-        'password.confirm' => [
-            'title' => __('Security check'),
-            'heading' => __('Confirm your password'),
-            'intro' => __('This area is sensitive. Confirm your password to continue.'),
-        ],
-        default => [
-            'title' => __('Sign in'),
-            'heading' => __('Sign in to continue'),
-            'intro' => __('Track fees, record payments, and send reminders to parents — securely from one place.'),
-        ],
+        'register' => ['title' => __('Register'), 'heading' => __('Create account')],
+        'password.request' => ['title' => __('Password help'), 'heading' => __('Reset password')],
+        'password.reset' => ['title' => __('New password'), 'heading' => __('New password')],
+        'verification.notice' => ['title' => __('Verify email'), 'heading' => __('Verify email')],
+        'password.confirm' => ['title' => __('Security'), 'heading' => __('Confirm password')],
+        default => ['title' => __('Sign in'), 'heading' => __('Welcome back')],
     };
 @endphp
 <!DOCTYPE html>
@@ -40,14 +16,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ optional($appSetting)->school_name ?? config('app.name', 'Laravel') }} — {{ $guestPage['title'] }}</title>
+    <title>{{ optional($appSetting)->school_name ?? config('app.name', 'FTRS') }} — {{ $guestPage['title'] }}</title>
 
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
 
     <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
     @include('layouts.partials.icons-head')
@@ -55,53 +31,65 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="font-sans antialiased text-gray-900 min-h-screen bg-school-surface">
-    <div class="min-h-screen flex flex-col lg:flex-row">
-        <div
-            class="lg:w-5/12 xl:w-2/5 bg-gradient-to-br from-school-primary via-school-primary to-school-primary-hover text-white px-8 py-12 lg:py-16 flex flex-col justify-between shrink-0">
-            <div>
-                @if ($appSetting?->logo_path)
-                    <img src="{{ asset('storage/' . $appSetting->logo_path) }}" alt=""
-                        class="h-14 w-auto object-contain mb-6 bg-white/10 rounded-lg p-2">
-                @else
-                    <div
-                        class="inline-flex h-14 w-14 items-center justify-center rounded-xl bg-white/15 text-2xl font-bold mb-6 border border-white/20">
-                        {{ \Illuminate\Support\Str::substr(optional($appSetting)->school_name ?? 'M', 0, 1) }}
+<body class="guest-body">
+    <div class="guest-shell">
+        <aside class="guest-brand-panel">
+            <div class="guest-brand-inner">
+                <div class="guest-brand-top">
+                    @if ($appSetting?->logo_path)
+                        <img src="{{ asset('storage/' . $appSetting->logo_path) }}" alt=""
+                            class="guest-brand-logo">
+                    @else
+                        <div class="guest-brand-mark">
+                            {{ \Illuminate\Support\Str::substr(optional($appSetting)->school_name ?? 'M', 0, 1) }}
+                        </div>
+                    @endif
+                    <h1 class="guest-brand-title">
+                        {{ optional($appSetting)->school_name ?? 'Mbonea Secondary School' }}
+                    </h1>
+                    <p class="guest-brand-tagline">Fee Tracking &amp; Receipt System</p>
+                </div>
+
+                <div class="guest-brand-features">
+                    <div class="guest-feature">
+                        <span class="guest-feature-icon"><i class="bi bi-receipt-cutoff"></i></span>
+                        <span>Receipts &amp; payments</span>
+                    </div>
+                    <div class="guest-feature">
+                        <span class="guest-feature-icon"><i class="bi bi-bell"></i></span>
+                        <span>SMS &amp; email alerts</span>
+                    </div>
+                    <div class="guest-feature">
+                        <span class="guest-feature-icon"><i class="bi bi-graph-up-arrow"></i></span>
+                        <span>Reports &amp; balances</span>
+                    </div>
+                </div>
+
+                @if ($appSetting?->address || $appSetting?->contact_phone)
+                    <div class="guest-brand-footer">
+                        @if ($appSetting?->address)
+                            <p><i class="bi bi-geo-alt"></i> {{ $appSetting->address }}</p>
+                        @endif
+                        @if ($appSetting?->contact_phone)
+                            <p><i class="bi bi-telephone"></i> {{ $appSetting->contact_phone }}</p>
+                        @endif
                     </div>
                 @endif
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight leading-tight">
-                    {{ optional($appSetting)->school_name ?? 'School Receipt System' }}
-                </h1>
-                <p class="mt-4 text-white/85 text-sm sm:text-base max-w-md leading-relaxed">
-                    {{ $guestPage['intro'] }}
-                </p>
             </div>
-            <div class="mt-10 lg:mt-0 text-xs sm:text-sm text-white/70 space-y-1">
-                @if ($appSetting?->address)
-                    <p class="flex items-start gap-2">
-                        <span class="opacity-80 shrink-0"><i class="bi bi-geo-alt"></i></span>
-                        <span>{{ $appSetting->address }}</span>
-                    </p>
-                @endif
-                @if ($appSetting?->contact_phone)
-                    <p><i class="bi bi-telephone me-2 opacity-80"></i>{{ $appSetting->contact_phone }}</p>
-                @endif
-            </div>
-        </div>
+            <div class="guest-brand-pattern" aria-hidden="true"></div>
+        </aside>
 
-        <div class="flex-1 flex items-center justify-center p-6 sm:p-10 lg:p-14">
-            <div class="w-full max-w-md">
-                <div class="rounded-2xl bg-white shadow-lg shadow-school-primary/5 border border-gray-200/80 p-6 sm:p-8">
-                    <p class="text-sm font-medium text-school-muted uppercase tracking-wider mb-1">{{ __('Staff access') }}</p>
-                    <h2 class="text-xl font-bold text-school-primary mb-6">{{ $guestPage['heading'] }}</h2>
-                    {{ $slot }}
-                </div>
-                <p class="text-center text-xs text-school-muted mt-6">
-                    &copy; {{ date('Y') }} {{ optional($appSetting)->school_name ?? 'School' }}. {{ __('For official use only.') }}
-                </p>
+        <main class="guest-main">
+            <div class="guest-card">
+                <h2 class="guest-card-title">{{ $guestPage['heading'] }}</h2>
+                {{ $slot }}
             </div>
-        </div>
+            <p class="guest-copyright">
+                &copy; {{ date('Y') }} {{ optional($appSetting)->school_name ?? 'School' }}
+            </p>
+        </main>
     </div>
+    @stack('scripts')
 </body>
 
 </html>

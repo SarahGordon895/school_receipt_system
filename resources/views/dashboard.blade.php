@@ -2,6 +2,10 @@
 @section('title','Dashboard')
 
 @section('content')
+<div class="page-hero-school">
+  <p class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Fee collection overview</p>
+</div>
+
 <div class="row g-3">
   <div class="col-12 col-sm-6 col-xl-3">
     <div class="card h-100 stat-card-school">

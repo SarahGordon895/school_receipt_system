@@ -5,7 +5,7 @@
 <div class="card">
   <div class="card-header fw-semibold">New Student</div>
   <div class="card-body">
-    <form method="POST" action="{{ route('students.store') }}">
+    <form method="POST" action="{{ route('students.store') }}" data-student-form="create">
       @csrf
       <div class="row g-3">
         <div class="col-md-4">

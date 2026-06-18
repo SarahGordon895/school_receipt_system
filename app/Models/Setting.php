@@ -36,7 +36,7 @@ class Setting extends Model
             'simulate' => (bool) $this->sms_simulate,
             'endpoint' => $this->sms_api_endpoint ?: config('services.sms.endpoint'),
             'token' => $this->sms_api_token ?: config('services.sms.token'),
-            'sender_id' => $this->sms_sender_id ?: config('services.sms.sender_id', 'SCHOOL'),
+            'sender_id' => strtoupper((string) ($this->sms_sender_id ?: config('services.sms.sender_id', 'SCHOOL'))),
         ];
     }
 }

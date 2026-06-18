@@ -36,6 +36,7 @@ return [
     ],
 
     'sms' => [
+        'driver' => env('SMS_DRIVER', 'generic'),
         'endpoint' => env('SMS_API_ENDPOINT'),
         'token' => env('SMS_API_TOKEN'),
         'sender_id' => env('SMS_SENDER_ID', 'SCHOOL'),

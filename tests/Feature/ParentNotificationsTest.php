@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\User;
 use App\Notifications\PaymentReceivedNotification;
 use App\Services\ParentPaymentNotifier;
+use App\Services\SmsSendResult;
 use App\Services\SmsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -99,14 +100,14 @@ class ParentNotificationsTest extends TestCase
         ]);
 
         $sms = Mockery::mock(SmsService::class);
-        $sms->shouldReceive('send')->andReturn(true);
+        $sms->shouldReceive('send')->andReturn(SmsSendResult::sent());
         $this->app->instance(SmsService::class, $sms);
 
         $notifier = app(ParentPaymentNotifier::class);
         $notifier->notify($receipt);
         $notifier->notify($receipt);
 
-        Notification::assertSentTo($parent, PaymentReceivedNotification::class);
+        Notification::assertSentOnDemand(PaymentReceivedNotification::class);
 
         $this->assertEquals(
             1,

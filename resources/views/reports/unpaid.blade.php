@@ -60,6 +60,7 @@
             <th class="text-end">Balance</th>
             <th>Due Date</th>
             <th>Status</th>
+            <th class="text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -79,9 +80,22 @@
                   <span class="badge text-bg-warning">Pending</span>
                 @endif
               </td>
+              <td class="text-end">
+                <div class="table-actions justify-content-end">
+                  <x-icon-btn :href="route('notification-logs.send.create', ['student_id' => $row['student']->id])"
+                    icon="bi-send" label="Send reminder" variant="outline-primary" size="sm" />
+                  <form method="POST" action="{{ route('students.send-reminder', $row['student']) }}" class="d-inline"
+                    onsubmit="return confirm('Send SMS and email reminder to this parent now?')">
+                    @csrf
+                    <input type="hidden" name="send_sms" value="1">
+                    <input type="hidden" name="send_email" value="1">
+                    <x-icon-btn type="submit" icon="bi-lightning" label="Quick send" variant="outline-success" size="sm" />
+                  </form>
+                </div>
+              </td>
             </tr>
           @empty
-            <tr><td colspan="8" class="text-center text-muted py-4">No outstanding balances.</td></tr>
+            <tr><td colspan="9" class="text-center text-muted py-4">No outstanding balances.</td></tr>
           @endforelse
         </tbody>
       </table>

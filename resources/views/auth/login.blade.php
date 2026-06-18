@@ -1,49 +1,129 @@
 <x-guest-layout>
-    <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
+    @php
+        $loginType = old('login_type', 'school_admin');
+    @endphp
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
+    <div class="login-role-tabs" role="tablist" aria-label="Sign in as">
+        <button type="button" class="login-role-tab {{ $loginType === 'school_admin' ? 'active' : '' }}"
+            data-login-type="school_admin" role="tab"
+            aria-selected="{{ $loginType === 'school_admin' ? 'true' : 'false' }}">
+            <i class="bi bi-building" aria-hidden="true"></i>
+            <span>Admin</span>
+        </button>
+        <button type="button" class="login-role-tab {{ $loginType === 'parent' ? 'active' : '' }}"
+            data-login-type="parent" role="tab"
+            aria-selected="{{ $loginType === 'parent' ? 'true' : 'false' }}">
+            <i class="bi bi-phone" aria-hidden="true"></i>
+            <span>Parent</span>
+        </button>
+        <button type="button" class="login-role-tab {{ $loginType === 'super_admin' ? 'active' : '' }}"
+            data-login-type="super_admin" role="tab"
+            aria-selected="{{ $loginType === 'super_admin' ? 'true' : 'false' }}">
+            <i class="bi bi-shield-lock" aria-hidden="true"></i>
+            <span>Super Admin</span>
+        </button>
+    </div>
+
+    <form method="POST" action="{{ route('login') }}" id="loginForm" class="login-form">
+        @csrf
+        <input type="hidden" name="login_type" id="login_type" value="{{ $loginType }}">
+
+        <div id="emailField" class="login-field {{ $loginType === 'parent' ? 'd-none' : '' }}">
+            <label for="email" class="login-label">
+                <span id="emailLabelText">
+                    {{ $loginType === 'super_admin' ? __('Personal email') : __('Official email') }}
+                </span>
+            </label>
+            <div class="login-input-wrap">
+                <i class="bi bi-envelope" aria-hidden="true"></i>
+                <input id="email" type="email" name="email" value="{{ old('email') }}"
+                    autocomplete="username" class="login-input"
+                    {{ $loginType === 'parent' ? '' : 'required' }}>
+            </div>
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+        <div id="phoneField" class="login-field {{ $loginType === 'parent' ? '' : 'd-none' }}">
+            <label for="phone" class="login-label">{{ __('Phone number') }}</label>
+            <div class="login-input-wrap">
+                <i class="bi bi-telephone" aria-hidden="true"></i>
+                <input id="phone" type="tel" name="phone" value="{{ old('phone') }}"
+                    autocomplete="tel" placeholder="+2557XXXXXXXX" class="login-input"
+                    {{ $loginType === 'parent' ? 'required' : '' }}>
+            </div>
+            <x-input-error :messages="$errors->get('phone')" class="mt-2" />
+        </div>
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
+        <div class="login-field">
+            <label for="password" class="login-label">{{ __('Password') }}</label>
+            <div class="login-input-wrap">
+                <i class="bi bi-lock" aria-hidden="true"></i>
+                <input id="password" type="password" name="password" required
+                    autocomplete="current-password" class="login-input">
+            </div>
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-school-primary shadow-sm focus:ring-school-accent focus:ring-offset-0" name="remember">
-                <span class="ms-2 text-sm text-school-muted">{{ __('Remember me') }}</span>
+        <div class="login-options">
+            <label for="remember_me" class="login-remember">
+                <input id="remember_me" type="checkbox" name="remember">
+                <span>{{ __('Remember me') }}</span>
             </label>
-        </div>
-
-        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 mt-6">
             @if (Route::has('password.request'))
-                <a class="text-sm text-center sm:text-end text-school-muted hover:text-school-primary underline-offset-2 hover:underline rounded-md focus:outline-none focus:ring-2 focus:ring-school-accent focus:ring-offset-2 sm:me-auto"
-                    href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
+                <a id="forgotLink" href="{{ route('password.request') }}"
+                    class="login-forgot {{ $loginType === 'parent' ? 'd-none' : '' }}">
+                    {{ __('Forgot password?') }}
                 </a>
             @endif
-
-            <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-school-primary border border-transparent rounded-lg font-semibold text-sm text-white w-full sm:w-auto sm:ms-3 hover:bg-school-primary-hover focus:outline-none focus:ring-2 focus:ring-school-accent">
-                <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
-                {{ __('Log in') }}
-            </button>
         </div>
+
+        <button type="submit" class="login-submit">
+            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+            {{ __('Sign in') }}
+        </button>
     </form>
+
+    @push('scripts')
+    <script>
+        (function () {
+            const tabs = document.querySelectorAll('.login-role-tab');
+            const loginTypeInput = document.getElementById('login_type');
+            const emailField = document.getElementById('emailField');
+            const phoneField = document.getElementById('phoneField');
+            const emailInput = document.getElementById('email');
+            const phoneInput = document.getElementById('phone');
+            const emailLabel = document.getElementById('emailLabelText');
+            const forgotLink = document.getElementById('forgotLink');
+
+            function setType(type) {
+                loginTypeInput.value = type;
+                tabs.forEach(tab => {
+                    const active = tab.dataset.loginType === type;
+                    tab.classList.toggle('active', active);
+                    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+
+                const isParent = type === 'parent';
+                emailField.classList.toggle('d-none', isParent);
+                phoneField.classList.toggle('d-none', !isParent);
+                forgotLink?.classList.toggle('d-none', isParent);
+
+                emailInput.required = !isParent;
+                phoneInput.required = isParent;
+
+                if (type === 'super_admin') {
+                    emailLabel.textContent = @json(__('Personal email'));
+                } else if (type === 'school_admin') {
+                    emailLabel.textContent = @json(__('Official email'));
+                }
+            }
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => setType(tab.dataset.loginType));
+            });
+        })();
+    </script>
+    @endpush
 </x-guest-layout>

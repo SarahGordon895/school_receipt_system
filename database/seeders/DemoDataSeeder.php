@@ -16,31 +16,47 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $admin = User::where('email', 'admin@school.tz')->first();
+        $admin = User::where('email', 'admin@mbonea.sc.tz')->first();
         if (!$admin) {
-            $this->command?->warn('Skipping demo data: admin@school.tz not found. Run DatabaseSeeder first.');
+            $this->command?->warn('Skipping demo data: admin@mbonea.sc.tz not found. Run DatabaseSeeder first.');
 
             return;
         }
 
-        $parents = [
-            'mkumbo' => User::updateOrCreate(['email' => 'parent.mkumbo@school.tz'], [
+        $parentProfiles = [
+            'mkumbo' => [
                 'name' => 'Mkumbo Guardian',
-                'password' => bcrypt('password'),
-                'role' => 'parent',
-            ]),
-            'gordon' => User::updateOrCreate(['email' => 'parent.gordon@school.tz'], [
+                'email' => 'parent.mkumbo@mbonea.sc.tz',
+                'notification_email' => 'samweleve@gmail.com',
+                'phone' => '+255655139724',
+                'password' => 'Mkumbo@2025',
+            ],
+            'gordon' => [
                 'name' => 'Gordon Guardian',
-                'password' => bcrypt('password'),
-                'role' => 'parent',
-            ]),
-            'chaula' => User::updateOrCreate(['email' => 'parent.chaula@school.tz'], [
+                'email' => 'parent.gordon@mbonea.sc.tz',
+                'notification_email' => 'sarahgordon2404@gmail.com',
+                'phone' => '+255655139724',
+                'password' => 'Gordon@2025',
+            ],
+            'chaula' => [
                 'name' => 'Chaula Guardian',
-                'password' => bcrypt('password'),
-                'role' => 'parent',
-            ]),
-            'legacy' => User::where('email', 'parent@school.tz')->first(),
+                'email' => 'parent.chaula@mbonea.sc.tz',
+                'notification_email' => 'gordonsarah2404@gmail.com',
+                'phone' => '+255773255214',
+                'password' => 'Chaula@2025',
+            ],
         ];
+
+        $parents = [];
+        foreach ($parentProfiles as $key => $profile) {
+            $parents[$key] = User::updateOrCreate(['email' => $profile['email']], [
+                'name' => $profile['name'],
+                'email' => $profile['email'],
+                'phone' => $profile['phone'],
+                'password' => bcrypt($profile['password']),
+                'role' => 'parent',
+            ]);
+        }
 
         $categories = collect([
             ['name' => 'Tuition', 'default_amount' => 400_000],
@@ -123,8 +139,8 @@ class DemoDataSeeder extends Seeder
                     'name' => $row['name'],
                     'class_name' => $row['class_name'],
                     'parent_name' => $parent->name,
-                    'parent_phone' => '+25571200000' . substr($row['admission_no'], -1),
-                    'parent_email' => $parent->email,
+                    'parent_phone' => $parent->phone,
+                    'parent_email' => $parentProfiles[$row['parent_key']]['notification_email'] ?? $parent->email,
                     'fee_due_date' => $row['fee_due_date'],
                     'expected_total_fee' => 0,
                     'admitted_at' => now(),
@@ -137,7 +153,7 @@ class DemoDataSeeder extends Seeder
                 $parent->id,
                 'Guardian',
                 true,
-                $student->parent_phone,
+                $parent->phone,
                 $admin->id,
             );
 
@@ -193,6 +209,6 @@ class DemoDataSeeder extends Seeder
             }
         }
 
-        $this->command?->info('Demo data seeded: one parent account per student (see parent.mkumbo@, parent.gordon@, parent.chaula@).');
+        $this->command?->info('Demo data seeded: parent accounts use phone login (+255655139724 and +255773255214).');
     }
 }

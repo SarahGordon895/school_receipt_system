@@ -19,25 +19,18 @@ class DatabaseSeeder extends Seeder
         // Backfill any legacy users without role.
         User::query()->whereNull('role')->update(['role' => 'school_admin']);
         
-        User::query()->updateOrCreate(['email' => 'superadmin@school.tz'], [
-            'name' => 'Super Admin',
-            'email' => 'superadmin@school.tz',
-            'password' => bcrypt('password'),
+        User::query()->updateOrCreate(['email' => 'sarahgeorge7224@gmail.com'], [
+            'name' => 'Sarah George',
+            'email' => 'sarahgeorge7224@gmail.com',
+            'password' => bcrypt('Super@FTRS2025'),
             'role' => 'super_admin',
         ]);
 
-        User::query()->updateOrCreate(['email' => 'admin@school.tz'], [
-            'name' => 'Admin User',
-            'email' => 'admin@school.tz',
-            'password' => bcrypt('password'),
+        User::query()->updateOrCreate(['email' => 'admin@mbonea.sc.tz'], [
+            'name' => 'School Administrator',
+            'email' => 'admin@mbonea.sc.tz',
+            'password' => bcrypt('Mbonea@Admin2025'),
             'role' => 'school_admin',
-        ]);
-
-        User::query()->updateOrCreate(['email' => 'parent@school.tz'], [
-            'name' => 'Parent User',
-            'email' => 'parent@school.tz',
-            'password' => bcrypt('password'),
-            'role' => 'parent',
         ]);
 
         $this->call(DemoDataSeeder::class);

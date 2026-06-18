@@ -17,11 +17,15 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_users_can_authenticate_using_the_login_screen(): void
+    public function test_school_admin_can_authenticate_with_official_email(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'role' => 'school_admin',
+            'email' => 'admin@mbonea.sc.tz',
+        ]);
 
         $response = $this->post('/login', [
+            'login_type' => 'school_admin',
             'email' => $user->email,
             'password' => 'password',
         ]);
@@ -30,11 +34,55 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('dashboard', absolute: false));
     }
 
+    public function test_parent_can_authenticate_with_phone(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'parent',
+            'phone' => '+255712000099',
+            'email' => 'parent.test@mbonea.sc.tz',
+        ]);
+
+        $response = $this->post('/login', [
+            'login_type' => 'parent',
+            'phone' => $user->phone,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('parent.dashboard', absolute: false));
+    }
+
+    public function test_parents_with_shared_phone_can_authenticate_by_password(): void
+    {
+        User::factory()->create([
+            'role' => 'parent',
+            'phone' => '+255655139724',
+            'email' => 'mkumbo@example.com',
+            'password' => 'Mkumbo@2025',
+        ]);
+        $gordon = User::factory()->create([
+            'role' => 'parent',
+            'phone' => '+255655139724',
+            'email' => 'gordon@example.com',
+            'password' => 'Gordon@2025',
+        ]);
+
+        $response = $this->post('/login', [
+            'login_type' => 'parent',
+            'phone' => '+255655139724',
+            'password' => 'Gordon@2025',
+        ]);
+
+        $this->assertAuthenticatedAs($gordon);
+        $response->assertRedirect(route('parent.dashboard', absolute: false));
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'school_admin']);
 
         $this->post('/login', [
+            'login_type' => 'school_admin',
             'email' => $user->email,
             'password' => 'wrong-password',
         ]);

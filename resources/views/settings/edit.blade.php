@@ -112,6 +112,7 @@
               value="{{ old('sms_sender_id', $setting->sms_sender_id ?? 'SCHOOL') }}">
             <label for="sms_sender_id">Sender ID</label>
           </div>
+          <div class="form-text">Must match your approved iMart sender ID exactly (e.g. COLLEGE).</div>
         </div>
         <div class="col-md-6">
           <div class="form-floating">

@@ -2,6 +2,7 @@
   $primaryLink = $student->primaryParentLink ?? null;
   $selectedParentId = old('parent_user_id', $student->parent_user_id ?? $primaryLink?->parent_user_id);
   $selectedRelationship = old('parent_relationship', $primaryLink?->relationship ?? 'Guardian');
+  $portalLoginEmail = old('portal_login_email', $student->parentUser?->email ?? '');
 @endphp
 
 @if(isset($student) && $student->exists)
@@ -42,7 +43,7 @@
     @endforeach
   </select>
   @error('parent_user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-  <div class="form-text">Required at admission. This account is the only one that can view this student’s fees in the parent portal (per project report).</div>
+  <div class="form-text">Parent uses this account to log in to the portal (phone + password).</div>
 </div>
 <div class="col-md-6">
   <label class="form-label fw-semibold">Relationship to student <span class="text-danger">*</span></label>
@@ -70,9 +71,26 @@
 </div>
 <div class="col-md-4">
   <div class="form-floating">
-    <input type="email" class="form-control" id="parent_email" name="parent_email" placeholder="Parent email"
+    <input type="email" class="form-control @error('parent_email') is-invalid @enderror" id="parent_email" name="parent_email" placeholder="Notification email"
       value="{{ old('parent_email', $student->parent_email ?? '') }}">
-    <label for="parent_email">Parent Email</label>
+    <label for="parent_email">Notification Email (SMS alerts companion)</label>
+  </div>
+  @error('parent_email')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+  <div class="form-text">Fee reminder and payment emails are sent here.</div>
+</div>
+<div class="col-md-6">
+  <div class="form-floating">
+    <input type="email" class="form-control @error('portal_login_email') is-invalid @enderror" id="portal_login_email" name="portal_login_email" placeholder="Portal login email"
+      value="{{ $portalLoginEmail }}">
+    <label for="portal_login_email">Portal Login Email</label>
+  </div>
+  @error('portal_login_email')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+  <div class="form-text">Changing this updates the parent portal account login email.</div>
+</div>
+<div class="col-md-6 d-flex align-items-end">
+  <div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" id="copy_notification_email">
+    <label class="form-check-label" for="copy_notification_email">Use notification email for portal login too</label>
   </div>
 </div>
 
@@ -80,14 +98,33 @@
 <script>
   (function () {
     const select = document.getElementById('parent_user_id');
-    if (!select) return;
+    const form = select?.closest('form');
+    const portalEmail = document.getElementById('portal_login_email');
+    const notifyEmail = document.getElementById('parent_email');
+    const copyCheckbox = document.getElementById('copy_notification_email');
+    if (!select || !form) return;
+
+    function copyNotifyToPortal() {
+      if (copyCheckbox?.checked && notifyEmail && portalEmail) {
+        portalEmail.value = notifyEmail.value;
+      }
+    }
+
+    copyCheckbox?.addEventListener('change', copyNotifyToPortal);
+    notifyEmail?.addEventListener('input', copyNotifyToPortal);
+
     select.addEventListener('change', function () {
+      if (form.dataset.studentForm === 'edit') {
+        return;
+      }
+
       const opt = select.selectedOptions[0];
       if (!opt || !opt.value) return;
-      const email = document.getElementById('parent_email');
+
       const name = document.getElementById('parent_name');
-      if (email && opt.dataset.email) email.value = opt.dataset.email;
+      if (portalEmail && opt.dataset.email) portalEmail.value = opt.dataset.email;
       if (name && opt.dataset.name) name.value = opt.dataset.name;
+      if (notifyEmail && opt.dataset.email && !notifyEmail.value) notifyEmail.value = opt.dataset.email;
     });
   })();
 </script>

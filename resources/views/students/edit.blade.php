@@ -5,7 +5,7 @@
 <div class="card">
   <div class="card-header fw-semibold">Update Student</div>
   <div class="card-body">
-    <form method="POST" action="{{ route('students.update',$student) }}">
+    <form method="POST" action="{{ route('students.update',$student) }}" data-student-form="edit">
       @csrf @method('PUT')
       <div class="row g-3">
         <div class="col-md-4">

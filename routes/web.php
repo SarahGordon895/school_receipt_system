@@ -67,7 +67,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/unpaid', [ReportController::class, 'unpaid'])->name('reports.unpaid');
         Route::post('/reports/unpaid/send-reminders', [ReportController::class, 'sendReminders'])->name('reports.unpaid.send-reminders');
-        Route::get('/notification-logs', [NotificationLogController::class, 'index'])->name('notification-logs.index');
+        Route::post('/notification-logs/{notification_log}/resend', [NotificationLogController::class, 'resend'])->name('notification-logs.resend');
+        Route::post('/notification-logs/{notification_log}/refresh-status', [NotificationLogController::class, 'refreshStatus'])->name('notification-logs.refresh-status');
+        Route::post('/notification-logs/{notification_log}/mark-delivered', [NotificationLogController::class, 'markDelivered'])->name('notification-logs.mark-delivered');
+        Route::get('/notification-logs/send', [NotificationLogController::class, 'sendCreate'])->name('notification-logs.send.create');
+        Route::post('/notification-logs/send', [NotificationLogController::class, 'sendStore'])->name('notification-logs.send.store');
+        Route::post('/students/{student}/send-reminder', [NotificationLogController::class, 'sendToStudent'])->name('students.send-reminder');
+        Route::resource('notification-logs', NotificationLogController::class);
         Route::post('/reports/generate', [ReportController::class, 'generate'])->name('reports.generate');
         Route::post('/reports/export/excel', [ReportController::class, 'exportExcel'])->name('reports.export.excel');
         Route::post('/reports/export/pdf', [ReportController::class, 'exportPdf'])->name('reports.export.pdf');

@@ -2,14 +2,14 @@
 @section('title','Parent Portal')
 
 @section('content')
-<div class="alert alert-light border mb-3">
-  <div class="d-flex align-items-start gap-2">
-    <i class="bi bi-person-check fs-4 text-school-primary"></i>
+<div class="parent-welcome-card">
+  <div class="d-flex align-items-center gap-3">
+    <span class="guest-feature-icon" style="background:var(--school-primary-soft);color:var(--school-primary);width:3rem;height:3rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.35rem;">
+      <i class="bi bi-person-heart"></i>
+    </span>
     <div>
-      <div class="fw-semibold">Welcome, {{ $parent->name }}</div>
-      <div class="small text-muted">
-        You can view fee status, payment history, and notifications only for your registered child(ren) at this school.
-      </div>
+      <div class="welcome-name">{{ $parent->name }}</div>
+      <div class="small text-muted">{{ $parent->login_identifier }}</div>
     </div>
   </div>
 </div>
@@ -133,7 +133,7 @@
     <div class="card-body text-center text-muted py-5">
       <i class="bi bi-person-x display-6 d-block mb-2"></i>
       <p class="mb-0">No student is linked to your account yet.</p>
-      <p class="small">Ask the school to register your child and link your parent email: <strong>{{ $parent->email }}</strong></p>
+      <p class="small">Contact the school office to link your child to this account.</p>
     </div>
   </div>
 @endforelse

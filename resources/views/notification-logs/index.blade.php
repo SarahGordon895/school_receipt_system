@@ -1,7 +1,112 @@
 @extends('layouts.app')
 @section('title', 'Notification Logs')
 
+@section('actions')
+    <div class="page-actions">
+        <x-icon-btn :href="route('notification-logs.send.create')" icon="bi-send" label="Send to parent" variant="primary" :iconOnly="false" />
+        <x-icon-btn :href="route('notification-logs.create')" icon="bi-journal-plus" label="Record log" variant="outline-secondary" :iconOnly="false" />
+    </div>
+@endsection
+
 @section('content')
+@php
+    $sentCount = (int) ($stats['sent'] ?? 0);
+    $failedCount = (int) ($stats['failed'] ?? 0);
+    $skippedCount = (int) ($stats['skipped'] ?? 0);
+    $currentStatus = $filters['status'] ?? '';
+    $filterQuery = array_filter($filters ?? [], fn ($value) => filled($value));
+    $statHref = function (?string $status) use ($filterQuery, $currentStatus) {
+        $query = $filterQuery;
+
+        if ($status === null || $currentStatus === $status) {
+            unset($query['status']);
+        } else {
+            $query['status'] = $status;
+        }
+
+        return route('notification-logs.index', $query);
+    };
+@endphp
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <a href="{{ $statHref('sent') }}" class="text-decoration-none d-block h-100">
+            <div class="card h-100 stat-card-school stat-card-log stat-card-log-success @if($currentStatus === 'sent') is-active @endif">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2 text-muted small text-uppercase fw-semibold stat-card-log-title">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <span>Delivered</span>
+                        </div>
+                        @if($currentStatus === 'sent')
+                            <span class="badge text-bg-success">Filtered</span>
+                        @endif
+                    </div>
+                    <div class="fs-2 fw-bold mt-2 stat-value text-success">{{ $sentCount }}</div>
+                    <div class="small text-muted mt-1">SMS and email sent successfully</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <a href="{{ $statHref('failed') }}" class="text-decoration-none d-block h-100">
+            <div class="card h-100 stat-card-school stat-card-log stat-card-log-danger @if($currentStatus === 'failed') is-active @endif">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2 text-muted small text-uppercase fw-semibold stat-card-log-title">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>Failed</span>
+                        </div>
+                        @if($currentStatus === 'failed')
+                            <span class="badge text-bg-danger">Filtered</span>
+                        @endif
+                    </div>
+                    <div class="fs-2 fw-bold mt-2 stat-value text-danger">{{ $failedCount }}</div>
+                    <div class="small text-muted mt-1">Needs resend or review</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <a href="{{ $statHref('skipped') }}" class="text-decoration-none d-block h-100">
+            <div class="card h-100 stat-card-school stat-card-log stat-card-log-warning @if($currentStatus === 'skipped') is-active @endif">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2 text-muted small text-uppercase fw-semibold stat-card-log-title">
+                            <i class="bi bi-skip-forward-fill text-warning"></i>
+                            <span>Skipped</span>
+                        </div>
+                        @if($currentStatus === 'skipped')
+                            <span class="badge text-bg-warning text-dark">Filtered</span>
+                        @endif
+                    </div>
+                    <div class="fs-2 fw-bold mt-2 stat-value text-warning">{{ $skippedCount }}</div>
+                    <div class="small text-muted mt-1">No contact or SMS disabled</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <a href="{{ $statHref(null) }}" class="text-decoration-none d-block h-100">
+            <div class="card h-100 stat-card-school stat-card-log stat-card-log-neutral @if($currentStatus === '') is-active @endif">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2 text-muted small text-uppercase fw-semibold stat-card-log-title">
+                            <i class="bi bi-journal-text text-school-primary"></i>
+                            <span>All logs</span>
+                        </div>
+                        @if($currentStatus === '')
+                            <span class="badge text-bg-light text-dark border">Showing all</span>
+                        @endif
+                    </div>
+                    <div class="fs-2 fw-bold mt-2 stat-value text-school-primary">{{ $logs->total() }}</div>
+                    <div class="small text-muted mt-1">Matching your current filters</div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
 <div class="card mb-3">
     <div class="card-header fw-semibold">Filter reminder activity</div>
     <div class="card-body">
@@ -72,11 +177,12 @@
                         <th>Channel</th>
                         <th>Status</th>
                         <th>Message</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($logs as $log)
-                        <tr>
+                        <tr class="@if($log->status === 'failed') table-row-failed @elseif($log->status === 'sent') table-row-sent @endif">
                             <td class="text-nowrap">{{ $log->sent_on?->format('Y-m-d') }}</td>
                             <td>
                                 @if($log->student)
@@ -90,21 +196,25 @@
                             </td>
                             <td><span class="badge text-bg-secondary text-uppercase">{{ $log->channel }}</span></td>
                             <td>
-                                @php
-                                    $badge = match ($log->status) {
-                                        'sent' => 'success',
-                                        'failed' => 'danger',
-                                        'skipped' => 'warning',
-                                        default => 'secondary',
-                                    };
-                                @endphp
-                                <span class="badge text-bg-{{ $badge }}">{{ $log->status }}</span>
+                                <span class="badge text-bg-{{ $log->statusBadge() }}">{{ $log->statusLabel() }}</span>
+                                @if($log->delivery_status)
+                                    <div class="small text-muted mt-1">{{ $log->delivery_status }}</div>
+                                @endif
                             </td>
                             <td class="small text-muted">{{ \Illuminate\Support\Str::limit($log->message ?? '', 120) }}</td>
+                            <td class="text-end">
+                                <x-table-actions
+                                    :view="route('notification-logs.show', $log)"
+                                    :edit="route('notification-logs.edit', $log)"
+                                    :delete="route('notification-logs.destroy', $log)"
+                                    deleteConfirm="Delete this reminder log?">
+                                    @include('notification-logs.partials.resend-button', ['log' => $log])
+                                </x-table-actions>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">No notification logs match your filters.</td>
+                            <td colspan="6" class="text-center text-muted py-4">No notification logs match your filters.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -12,7 +12,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet">
 
     <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
     @include('layouts.partials.icons-head')
@@ -48,6 +48,14 @@
 
             <div class="collapse navbar-collapse justify-content-end" id="navbarActions">
                 <div class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-2 mt-3 mt-lg-0">
+                    <div class="user-chip d-none d-lg-flex order-lg-first me-lg-2">
+                        <span class="user-chip-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                        <span class="user-chip-meta">
+                            <span class="user-chip-name d-block">{{ auth()->user()->name }}</span>
+                            <span class="user-chip-id d-block">{{ auth()->user()->login_identifier }}</span>
+                        </span>
+                    </div>
+
                     @yield('actions')
 
                     @if(auth()->user()->hasRole('super_admin', 'school_admin'))
@@ -87,14 +95,22 @@
                 </div>
             @endif
 
+            @if (session('warning'))
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>{{ session('warning') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             @if ($errors->any())
-                <div class="alert alert-danger">
+                <div class="alert alert-danger alert-dismissible fade show">
                     <div class="fw-semibold mb-1">Please fix the following:</div>
                     <ul class="mb-0 small">
                         @foreach ($errors->all() as $e)
                             <li>{{ $e }}</li>
                         @endforeach
                     </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             @endif
 
@@ -137,6 +153,18 @@
 
             window.addEventListener('resize', () => {
                 if (window.matchMedia('(min-width: 992px)').matches) closeSidebar();
+            });
+
+            document.querySelectorAll('.form-with-loading').forEach((form) => {
+                form.addEventListener('submit', () => {
+                    const btn = form.querySelector('button[type="submit"]');
+                    if (!btn || btn.disabled) return;
+                    btn.disabled = true;
+                    const label = form.dataset.loadingLabel || 'Working…';
+                    const text = btn.querySelector('.btn-icon-text');
+                    if (text) text.textContent = label;
+                    btn.classList.add('is-loading');
+                });
             });
         })();
     </script>

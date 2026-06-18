@@ -35,13 +35,13 @@ class InstallFtrs extends Command
         $this->newLine();
         $this->components->info('FTRS is ready.');
         $this->table(
-            ['Role', 'Email', 'Password'],
+            ['Role', 'Login', 'Password'],
             [
-                ['Super Admin', 'superadmin@school.tz', 'password'],
-                ['School Admin', 'admin@school.tz', 'password'],
-                ['Parent (Mkumbo child)', 'parent.mkumbo@school.tz', 'password'],
-                ['Parent (Gordon child)', 'parent.gordon@school.tz', 'password'],
-                ['Parent (Chaula child)', 'parent.chaula@school.tz', 'password'],
+                ['Super Admin', 'sarahgeorge7224@gmail.com', 'Super@FTRS2025'],
+                ['School Admin', 'admin@mbonea.sc.tz', 'Mbonea@Admin2025'],
+                ['Parent (Mkumbo)', '+255655139724', 'Mkumbo@2025'],
+                ['Parent (Gordon)', '+255655139724', 'Gordon@2025'],
+                ['Parent (Chaula)', '+255773255214', 'Chaula@2025'],
             ]
         );
         $this->line('Start the server: <fg=cyan>serve.cmd</> then open <fg=cyan>http://127.0.0.1:8088</>');

@@ -15,6 +15,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
         'role',
     ];
@@ -50,6 +51,32 @@ class User extends Authenticatable
     public function getHomeRouteAttribute(): string
     {
         return $this->isParent() ? 'parent.dashboard' : 'dashboard';
+    }
+
+    public static function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        if ($digits === '') {
+            return $phone;
+        }
+
+        if (str_starts_with($digits, '255')) {
+            return '+'.$digits;
+        }
+
+        if (str_starts_with($digits, '0')) {
+            return '+255'.substr($digits, 1);
+        }
+
+        return '+'.$digits;
+    }
+
+    public function getLoginIdentifierAttribute(): string
+    {
+        return $this->isParent()
+            ? ($this->phone ?? '—')
+            : ($this->email ?? '—');
     }
 
     /**

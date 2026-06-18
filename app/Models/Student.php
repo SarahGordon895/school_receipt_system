@@ -105,4 +105,51 @@ class Student extends Model
     {
         return max(0, $this->expected_amount - $this->paid_amount);
     }
+
+    public function resolveParentPhone(): ?string
+    {
+        foreach ($this->parentPhoneCandidates() as $phone) {
+            if (filled($phone)) {
+                return User::normalizePhone($phone);
+            }
+        }
+
+        return null;
+    }
+
+    public function resolveParentEmail(): ?string
+    {
+        if (filled($this->parent_email)) {
+            return $this->parent_email;
+        }
+
+        $parent = $this->relationLoaded('parentUser')
+            ? $this->parentUser
+            : ($this->parent_user_id ? $this->parentUser()->first() : null);
+
+        return $parent?->email;
+    }
+
+    public function hasParentContact(): bool
+    {
+        return $this->resolveParentPhone() !== null || $this->resolveParentEmail() !== null;
+    }
+
+    /** @return list<?string> */
+    private function parentPhoneCandidates(): array
+    {
+        $parent = $this->relationLoaded('parentUser')
+            ? $this->parentUser
+            : ($this->parent_user_id ? $this->parentUser()->first() : null);
+
+        $link = $this->relationLoaded('primaryParentLink')
+            ? $this->primaryParentLink
+            : $this->primaryParentLink()->first();
+
+        return [
+            $this->parent_phone,
+            $link?->parent_phone,
+            $parent?->phone,
+        ];
+    }
 }

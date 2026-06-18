@@ -49,10 +49,16 @@
               <td>{{ $s->class_name ?? '—' }}</td>
               <td>
                 <div>{{ $s->parent_name ?? 'N/A' }}</div>
+                <div class="small text-muted">
+                  <span class="text-success"><i class="bi bi-phone me-1"></i>{{ $s->parent_phone ?? 'No phone' }}</span>
+                </div>
                 @if($s->parentUser)
-                  <div class="small text-success"><i class="bi bi-link-45deg me-1"></i>{{ $s->parentUser->email }}</div>
-                @else
-                  <div class="small text-muted">{{ $s->parent_phone ?? 'No phone' }}{{ $s->parent_email ? ' • '.$s->parent_email : '' }}</div>
+                  <div class="small"><i class="bi bi-box-arrow-in-right me-1"></i>Portal: {{ $s->parentUser->email }}</div>
+                @endif
+                @if($s->parent_email && $s->parent_email !== $s->parentUser?->email)
+                  <div class="small"><i class="bi bi-envelope me-1"></i>Alerts: {{ $s->parent_email }}</div>
+                @elseif($s->parent_email)
+                  <div class="small"><i class="bi bi-envelope me-1"></i>Alerts: {{ $s->parent_email }}</div>
                 @endif
               </td>
               <td class="text-end">
@@ -64,7 +70,10 @@
                 <x-table-actions
                   :edit="route('students.edit', $s)"
                   :delete="route('students.destroy', $s)"
-                  deleteConfirm="Delete this student and related records?" />
+                  deleteConfirm="Delete this student and related records?">
+                  <x-icon-btn :href="route('notification-logs.send.create', ['student_id' => $s->id])"
+                    icon="bi-send" label="Send reminder" variant="outline-success" size="sm" />
+                </x-table-actions>
               </td>
             </tr>
           @empty

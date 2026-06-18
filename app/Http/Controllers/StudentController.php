@@ -30,7 +30,7 @@ class StudentController extends Controller
     public function create()
     {
         $feeStructures = FeeStructure::where('is_active', true)->orderBy('name')->get(['id', 'name', 'amount', 'class_name']);
-        $parentAccounts = User::query()->where('role', 'parent')->orderBy('name')->get(['id', 'name', 'email']);
+        $parentAccounts = User::query()->where('role', 'parent')->orderBy('name')->get(['id', 'name', 'email', 'phone']);
 
         return view('students.create', compact('feeStructures', 'parentAccounts'));
     }
@@ -39,17 +39,21 @@ class StudentController extends Controller
     {
         $data = $this->validatedStudentData($request);
 
-        $student = new Student($data);
+        $student = new Student(collect($data)->except(['parent_user_id', 'parent_relationship', 'fee_structure_ids', 'portal_login_email'])->all());
         $student->admitted_at = now();
         $student->registered_by_user_id = $request->user()->id;
         $student->save();
+
+        if (filled($data['portal_login_email'] ?? null)) {
+            ParentStudentAdmission::updateParentPortalEmail((int) $data['parent_user_id'], $data['portal_login_email']);
+        }
 
         ParentStudentAdmission::linkGuardian(
             $student,
             (int) $data['parent_user_id'],
             $data['parent_relationship'],
             true,
-            $data['parent_phone'] ?? null,
+            $data['parent_phone'],
             $request->user()->id,
         );
 
@@ -61,8 +65,8 @@ class StudentController extends Controller
     public function edit(Student $student)
     {
         $feeStructures = FeeStructure::where('is_active', true)->orderBy('name')->get(['id', 'name', 'amount', 'class_name']);
-        $parentAccounts = User::query()->where('role', 'parent')->orderBy('name')->get(['id', 'name', 'email']);
-        $student->load(['feeStructures:id', 'primaryParentLink.linkedBy', 'registeredBy']);
+        $parentAccounts = User::query()->where('role', 'parent')->orderBy('name')->get(['id', 'name', 'email', 'phone']);
+        $student->load(['feeStructures:id', 'primaryParentLink.linkedBy', 'registeredBy', 'parentUser']);
 
         return view('students.edit', compact('student', 'feeStructures', 'parentAccounts'));
     }
@@ -71,21 +75,27 @@ class StudentController extends Controller
     {
         $data = $this->validatedStudentData($request, $student);
 
-        $student->fill($data);
+        $student->fill(collect($data)->except(['parent_user_id', 'parent_relationship', 'fee_structure_ids', 'portal_login_email'])->all());
         $student->save();
+
+        if (filled($data['portal_login_email'] ?? null)) {
+            ParentStudentAdmission::updateParentPortalEmail((int) $data['parent_user_id'], $data['portal_login_email']);
+        }
 
         ParentStudentAdmission::linkGuardian(
             $student,
             (int) $data['parent_user_id'],
             $data['parent_relationship'],
             true,
-            $data['parent_phone'] ?? null,
+            $data['parent_phone'],
             $request->user()->id,
         );
 
         $student->feeStructures()->sync($data['fee_structure_ids'] ?? []);
 
-        return redirect()->route('students.index')->with('status', 'Student and parent admission link updated.');
+        return redirect()
+            ->route('students.edit', $student)
+            ->with('status', 'Student and parent contact details updated.');
     }
 
     public function destroy(Student $student)
@@ -146,6 +156,12 @@ class StudentController extends Controller
             'parent_name' => ['nullable', 'string', 'max:255'],
             'parent_phone' => ['required', 'string', 'max:50'],
             'parent_email' => ['nullable', 'email', 'max:255'],
+            'portal_login_email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($request->input('parent_user_id')),
+            ],
             'fee_due_date' => ['nullable', 'date'],
             'expected_total_fee' => ['nullable', 'integer', 'min:0'],
             'fee_structure_ids' => ['nullable', 'array'],

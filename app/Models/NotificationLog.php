@@ -12,6 +12,8 @@ class NotificationLog extends Model
         'status',
         'sent_on',
         'message',
+        'gateway_uid',
+        'delivery_status',
         'read_at',
     ];
 
@@ -26,5 +28,32 @@ class NotificationLog extends Model
     public function student()
     {
         return $this->belongsTo(Student::class);
+    }
+
+    public function isResolvableFailure(): bool
+    {
+        return in_array($this->status, ['failed', 'skipped'], true)
+            && in_array($this->channel, ['sms', 'email'], true)
+            && $this->student_id !== null;
+    }
+
+    public function statusLabel(): string
+    {
+        return match ($this->status) {
+            'sent' => 'Delivered',
+            'failed' => 'Failed',
+            'skipped' => 'Skipped',
+            default => ucfirst((string) $this->status),
+        };
+    }
+
+    public function statusBadge(): string
+    {
+        return match ($this->status) {
+            'sent' => 'success',
+            'failed' => 'danger',
+            'skipped' => 'warning',
+            default => 'secondary',
+        };
     }
 }

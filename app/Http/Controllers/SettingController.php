@@ -37,6 +37,9 @@ class SettingController extends Controller
 
         $data['sms_enabled'] = $request->boolean('sms_enabled');
         $data['sms_simulate'] = $request->boolean('sms_simulate');
+        if (! empty($data['sms_sender_id'])) {
+            $data['sms_sender_id'] = strtoupper($data['sms_sender_id']);
+        }
         if (empty($data['sms_api_token'])) {
             unset($data['sms_api_token']);
         }
@@ -54,14 +57,18 @@ class SettingController extends Controller
         $setting->update($data);
 
         if ($request->filled('sms_test_phone')) {
-            $ok = app(SmsService::class)->send(
+            $result = app(SmsService::class)->send(
                 $request->input('sms_test_phone'),
-                'FTRS test SMS from ' . ($setting->school_name ?? 'School') . '. Configuration is working.'
+                'FTRS test SMS from '.($setting->school_name ?? 'School').'. Configuration is working.'
             );
 
             return back()->with(
                 'status',
-                $ok ? 'Settings saved. Test SMS was sent (or simulated — check storage/logs).' : 'Settings saved, but test SMS failed. Check SMS settings and logs.'
+                $result->succeeded()
+                    ? 'Settings saved. Test SMS was sent successfully.'
+                    : ($result->status === 'skipped'
+                        ? 'Settings saved. '.$result->detail
+                        : 'Settings saved, but test SMS failed: '.$result->detail)
             );
         }
 
