@@ -17,7 +17,7 @@ class SettingSeeder extends Seeder
         $payload = [
             'school_name' => 'Mbonea Secondary School',
             'contact_phone' => '+255655139724',
-            'contact_email' => 'admin@mbonea.sc.tz',
+            'contact_email' => 'sarahgordon2404@gmail.com',
             'address' => 'Mbonea, Tanzania',
             'reg_number' => 'REG-001',
             'receipt_footer' => 'Asante kwa kulipa ada kwa wakati. — Mbonea Secondary School',
@@ -26,6 +26,14 @@ class SettingSeeder extends Seeder
             'sms_api_endpoint' => $endpoint,
             'sms_api_token' => $token,
             'sms_sender_id' => $senderId,
+            'sms_template_payment_received' => 'Asante! Malipo ya Tsh {amount} kwa {student_name} yamepokelewa (Risiti {receipt_no}). Salio: Tsh {balance}. — {school_name}',
+            'sms_template_fee_reminder' => 'Ukumbusho: {student_name} ana salio la ada Tsh {balance}. Tarehe ya mwisho: {due_date}. Tafadhali lipa kwa wakati. — {school_name}',
+            'sms_template_fee_reminder_14' => 'Ukumbusho (wiki 2): {student_name} ana salio la ada Tsh {balance}. Tarehe ya mwisho: {due_date} (siku {days_until_due} zimebaki). Tafadhali lipa kwa wakati. — {school_name}',
+            'sms_template_overdue' => 'Taarifa: Ada ya {student_name} (Tsh {balance}) imepitisha tarehe ya mwisho ({due_date}). Tafadhali lipa haraka. — {school_name}',
+            'bank_nmb_account_name' => 'Mbonea Secondary School',
+            'bank_nmb_account_number' => '20110012345',
+            'bank_crdb_account_name' => 'Mbonea Secondary School',
+            'bank_crdb_account_number' => '0150123456789',
         ];
 
         $setting = Setting::query()->first();

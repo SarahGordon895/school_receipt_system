@@ -18,15 +18,14 @@ class EnsureRole
         }
 
         if (!$user->hasRole(...$roles)) {
-            // Graceful role redirect instead of hard 403 for valid authenticated users.
             if ($user->isParent() && Route::has('parent.dashboard')) {
                 return redirect()->route('parent.dashboard')
                     ->with('status', 'Switched to parent dashboard based on your account role.');
             }
 
-            if (Route::has('dashboard')) {
+            if ($user->canManageSchool() && Route::has('dashboard')) {
                 return redirect()->route('dashboard')
-                    ->with('status', 'Switched to admin dashboard based on your account role.');
+                    ->with('status', 'School operations are managed from the admin dashboard.');
             }
 
             abort(403, 'You are not authorized to access this section.');

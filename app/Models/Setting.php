@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Setting extends Model
 {
@@ -19,6 +20,14 @@ class Setting extends Model
         'sms_api_endpoint',
         'sms_api_token',
         'sms_sender_id',
+        'sms_template_payment_received',
+        'sms_template_fee_reminder',
+        'sms_template_fee_reminder_14',
+        'sms_template_overdue',
+        'bank_nmb_account_name',
+        'bank_nmb_account_number',
+        'bank_crdb_account_name',
+        'bank_crdb_account_number',
     ];
 
     protected function casts(): array
@@ -38,5 +47,19 @@ class Setting extends Model
             'token' => $this->sms_api_token ?: config('services.sms.token'),
             'sender_id' => strtoupper((string) ($this->sms_sender_id ?: config('services.sms.sender_id', 'SCHOOL'))),
         ];
+    }
+
+    public static function current(): ?self
+    {
+        try {
+            return Cache::remember('app_setting', 3600, fn () => static::query()->first());
+        } catch (\Throwable) {
+            return static::query()->first();
+        }
+    }
+
+    public static function forgetCache(): void
+    {
+        Cache::forget('app_setting');
     }
 }

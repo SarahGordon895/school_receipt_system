@@ -95,13 +95,23 @@ class ParentDashboardController extends Controller
         $filters = $request->only(['q', 'channel', 'status', 'from', 'to', 'student_id']);
 
         $baseStatsQuery = NotificationLog::query()->whereIn('student_id', $studentIds);
+        $statsRow = (clone $baseStatsQuery)->selectRaw(
+            'COUNT(*) as total,
+            SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as sent,
+            SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as failed,
+            SUM(CASE WHEN channel = ? THEN 1 ELSE 0 END) as sms,
+            SUM(CASE WHEN channel = ? THEN 1 ELSE 0 END) as email,
+            SUM(CASE WHEN read_at IS NULL THEN 1 ELSE 0 END) as unread',
+            ['sent', 'failed', 'sms', 'email']
+        )->first();
+
         $stats = [
-            'total' => (clone $baseStatsQuery)->count(),
-            'sent' => (clone $baseStatsQuery)->where('status', 'sent')->count(),
-            'failed' => (clone $baseStatsQuery)->where('status', 'failed')->count(),
-            'sms' => (clone $baseStatsQuery)->where('channel', 'sms')->count(),
-            'email' => (clone $baseStatsQuery)->where('channel', 'email')->count(),
-            'unread' => (clone $baseStatsQuery)->whereNull('read_at')->count(),
+            'total' => (int) ($statsRow->total ?? 0),
+            'sent' => (int) ($statsRow->sent ?? 0),
+            'failed' => (int) ($statsRow->failed ?? 0),
+            'sms' => (int) ($statsRow->sms ?? 0),
+            'email' => (int) ($statsRow->email ?? 0),
+            'unread' => (int) ($statsRow->unread ?? 0),
         ];
 
         return view('parents.notifications', compact('logs', 'filters', 'students', 'stats', 'parent'));

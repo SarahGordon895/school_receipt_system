@@ -62,17 +62,23 @@
                 @endif
               </td>
               <td class="text-end">
-                <span class="{{ $s->balance > 0 ? 'text-danger fw-semibold' : 'text-success fw-semibold' }}">
+                <span class="badge text-bg-{{ $s->paymentStatusBadge() }} mb-1">{{ $s->paymentStatusLabel() }}</span>
+                <div class="{{ $s->balance > 0 ? 'text-danger fw-semibold' : 'text-success fw-semibold' }}">
                   Tsh {{ number_format($s->balance) }}
-                </span>
+                </div>
               </td>
               <td class="text-end">
                 <x-table-actions
                   :edit="route('students.edit', $s)"
                   :delete="route('students.destroy', $s)"
                   deleteConfirm="Delete this student and related records?">
-                  <x-icon-btn :href="route('notification-logs.send.create', ['student_id' => $s->id])"
-                    icon="bi-send" label="Send reminder" variant="outline-success" size="sm" />
+                  @if($s->hasOutstandingBalance())
+                    <x-icon-btn :href="route('notification-logs.send.create', ['student_id' => $s->id])"
+                      icon="bi-send" label="Send reminder" variant="outline-success" size="sm" />
+                  @elseif($s->isFullyPaid())
+                    <x-icon-btn :href="route('students.clearance-certificate', $s)" icon="bi-file-earmark-pdf"
+                      label="Clearance PDF" variant="outline-success" size="sm" />
+                  @endif
                 </x-table-actions>
               </td>
             </tr>

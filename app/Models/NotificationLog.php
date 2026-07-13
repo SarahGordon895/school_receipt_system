@@ -9,6 +9,7 @@ class NotificationLog extends Model
     protected $fillable = [
         'student_id',
         'channel',
+        'event_type',
         'status',
         'sent_on',
         'message',

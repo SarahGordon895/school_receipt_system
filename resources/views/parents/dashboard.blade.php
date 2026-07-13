@@ -14,6 +14,26 @@
   </div>
 </div>
 
+@if($portfolio['balance_total'] <= 0 && $portfolio['students_count'] > 0)
+  <div class="alert alert-success d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-check-circle-fill fs-5"></i>
+    <div>
+      <strong>All school fees are paid in full.</strong>
+      No outstanding balance on your account. You will receive a confirmation SMS/email when future payments are recorded.
+    </div>
+  </div>
+@endif
+
+@if($portfolio['balance_total'] > 0)
+  <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <i class="bi bi-bank me-1"></i>
+      <strong>Pay by bank?</strong> Deposit fees to the school NMB/CRDB account and upload your bank receipt PDF for automatic verification.
+    </div>
+    <a href="{{ route('parent.bank-payments.index') }}" class="btn btn-sm btn-school-primary">Upload bank receipt</a>
+  </div>
+@endif
+
 <div class="row g-3 mb-3">
   <div class="col-6 col-md">
     <div class="card h-100">
@@ -74,8 +94,17 @@
         @if($student->admission_no)
           <span class="small text-muted ms-1">#{{ $student->admission_no }}</span>
         @endif
+        @if($student->isFullyPaid())
+          <span class="badge text-bg-success ms-2"><i class="bi bi-check-lg me-1"></i>Fully paid</span>
+        @elseif($student->hasOutstandingBalance())
+          <span class="badge text-bg-{{ $student->paymentStatusBadge() }} ms-2">{{ $student->paymentStatusLabel() }}</span>
+        @endif
       </div>
       <x-icon-btn :href="route('parent.students.show', $student)" icon="eye" label="View full profile" variant="primary" size="sm" :iconOnly="false" />
+      @if($student->isFullyPaid())
+        <x-icon-btn :href="route('parent.students.clearance-certificate', $student)" icon="bi-file-earmark-pdf"
+          label="Clearance certificate" variant="outline-success" size="sm" :iconOnly="false" />
+      @endif
     </div>
     <div class="card-body">
       <div class="row g-3 mb-3">
@@ -101,7 +130,16 @@
 
       <h6 class="small text-muted text-uppercase fw-semibold mb-2"><i class="bi bi-cash-coin me-1"></i> Assigned fee structures</h6>
       @if($student->feeStructures->isNotEmpty())
-        <div class="table-responsive">
+        <div class="d-md-none small mb-0">
+          @foreach($student->feeStructures as $structure)
+            <div class="mobile-data-card py-2 px-3 mb-2">
+              <div class="fw-semibold">{{ $structure->name }}</div>
+              <div class="text-muted">{{ $structure->class_name ?? 'All classes' }} · Tsh {{ number_format($structure->amount) }}</div>
+              <div class="text-muted">Due: {{ $structure->due_date?->format('Y-m-d') ?? '—' }}</div>
+            </div>
+          @endforeach
+        </div>
+        <div class="table-responsive d-none d-md-block">
           <table class="table table-sm align-middle mb-0">
             <thead class="table-light">
               <tr>

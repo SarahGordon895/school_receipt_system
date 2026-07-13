@@ -16,7 +16,10 @@ class DashboardController extends Controller
         $monthStart = now()->startOfMonth();
         $yearStart = now()->startOfYear();
 
-        $studentsWithBalance = Student::withSum('receipts', 'amount')->get()
+        $studentsWithBalance = Student::query()
+            ->with(['feeStructures'])
+            ->withSum('receipts', 'amount')
+            ->get()
             ->filter(fn (Student $s) => $s->balance > 0);
 
         $metrics = [
@@ -30,6 +33,13 @@ class DashboardController extends Controller
             'overdue_count' => $studentsWithBalance->filter(
                 fn (Student $s) => $s->fee_due_date && $s->fee_due_date->isPast()
             )->count(),
+            'due_in_14_days' => $studentsWithBalance->filter(function (Student $s) {
+                if (! $s->fee_due_date) {
+                    return false;
+                }
+
+                return now()->startOfDay()->diffInDays($s->fee_due_date->startOfDay(), false) === 14;
+            })->count(),
         ];
 
         $byMode = \App\Models\Receipt::select('payment_mode', DB::raw('COUNT(*) c'), DB::raw('SUM(amount) s'))

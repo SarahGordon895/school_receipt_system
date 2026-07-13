@@ -30,7 +30,15 @@ class SettingController extends Controller
             'sms_api_endpoint' => ['nullable', 'string', 'max:500'],
             'sms_api_token' => ['nullable', 'string', 'max:500'],
             'sms_sender_id' => ['nullable', 'string', 'max:32'],
+            'sms_template_payment_received' => ['nullable', 'string', 'max:500'],
+            'sms_template_fee_reminder' => ['nullable', 'string', 'max:500'],
+            'sms_template_fee_reminder_14' => ['nullable', 'string', 'max:500'],
+            'sms_template_overdue' => ['nullable', 'string', 'max:500'],
             'sms_test_phone' => ['nullable', 'string', 'max:50'],
+            'bank_nmb_account_name' => ['nullable', 'string', 'max:255'],
+            'bank_nmb_account_number' => ['nullable', 'string', 'max:32'],
+            'bank_crdb_account_name' => ['nullable', 'string', 'max:255'],
+            'bank_crdb_account_number' => ['nullable', 'string', 'max:32'],
         ]);
 
         $setting = Setting::firstOrCreate([]);
@@ -55,6 +63,7 @@ class SettingController extends Controller
         }
 
         $setting->update($data);
+        Setting::forgetCache();
 
         if ($request->filled('sms_test_phone')) {
             $result = app(SmsService::class)->send(

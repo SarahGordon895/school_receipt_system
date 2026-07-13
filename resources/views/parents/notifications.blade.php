@@ -124,7 +124,39 @@
     <span class="badge text-bg-light">{{ $logs->total() }} total</span>
   </div>
   <div class="card-body p-0">
-    <div class="table-responsive">
+    <div class="mobile-card-list p-3">
+      @forelse($logs as $log)
+        <div class="mobile-data-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div>
+              <div class="fw-semibold">{{ $log->student?->name ?? 'Unknown' }}</div>
+              <div class="small text-muted">{{ $log->sent_on?->format('Y-m-d') }} · {{ strtoupper($log->channel) }}</div>
+            </div>
+            @php
+              $badge = match ($log->status) {
+                'sent' => 'success',
+                'failed' => 'danger',
+                'skipped' => 'warning',
+                default => 'secondary',
+              };
+            @endphp
+            <span class="badge text-bg-{{ $badge }}">{{ $log->status }}</span>
+          </div>
+          <p class="small text-muted mb-2">{{ Str::limit($log->message ?: '—', 120) }}</p>
+          @if(!$log->read_at)
+            <form method="POST" action="{{ route('parent.notifications.read', $log) }}">
+              @csrf
+              <button type="submit" class="btn btn-sm btn-outline-primary w-100">Mark as read</button>
+            </form>
+          @else
+            <div class="small text-success">Read {{ $log->read_at?->format('Y-m-d H:i') }}</div>
+          @endif
+        </div>
+      @empty
+        <p class="text-center text-muted py-4 mb-0">No notification history available yet.</p>
+      @endforelse
+    </div>
+    <div class="table-responsive table-responsive-desktop">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
@@ -157,7 +189,7 @@
                 <span class="badge text-bg-{{ $badge }}">{{ $log->status }}</span>
               </td>
               <td class="small text-muted">
-                {{ $log->message ?: '—' }}
+                {{ Str::limit($log->message ?: '—', 100) }}
                 @if(!$log->read_at)
                   <span class="badge text-bg-primary ms-2">Unread</span>
                 @endif

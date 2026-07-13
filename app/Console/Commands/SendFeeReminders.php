@@ -7,9 +7,9 @@ use Illuminate\Console\Command;
 
 class SendFeeReminders extends Command
 {
-    protected $signature = 'fees:send-reminders {--days=3 : Days ahead of due date}';
+    protected $signature = 'fees:send-reminders {--milestone= : Run one milestone only (14, 7, 3, 0, overdue). Omit to run full automation.}';
 
-    protected $description = 'Send SMS and email fee reminders to parents with outstanding balances';
+    protected $description = 'Automatically send fee reminder SMS and email at 14, 7, 3, and 0 days before due date, plus daily overdue notices';
 
     public function __construct(private ParentReminderService $parentReminderService)
     {
@@ -18,11 +18,31 @@ class SendFeeReminders extends Command
 
     public function handle(): int
     {
-        $days = max(0, (int) $this->option('days'));
-        $counts = $this->parentReminderService->sendScheduledReminders($days);
+        $milestone = $this->option('milestone');
 
-        $this->info("Fee reminders sent (email): {$counts['email']}");
-        $this->info("Fee reminders sent (sms): {$counts['sms']}");
+        if ($milestone === null || $milestone === '') {
+            $counts = $this->parentReminderService->runAutomatedReminders();
+            $this->info('Automated reminders complete.');
+            $this->info("SMS sent: {$counts['sms']} | Email sent: {$counts['email']}");
+            foreach ($counts['milestones'] as $type => $total) {
+                if ($total > 0) {
+                    $this->line("  {$type}: {$total}");
+                }
+            }
+
+            return self::SUCCESS;
+        }
+
+        if ($milestone === 'overdue') {
+            $counts = $this->parentReminderService->sendOverdueReminders();
+            $this->info("Overdue reminders — SMS: {$counts['sms']}, Email: {$counts['email']}");
+
+            return self::SUCCESS;
+        }
+
+        $days = (int) $milestone;
+        $counts = $this->parentReminderService->sendScheduledReminders($days);
+        $this->info("Milestone {$days}-day reminders — SMS: {$counts['sms']}, Email: {$counts['email']}");
 
         return self::SUCCESS;
     }

@@ -32,8 +32,11 @@ class InstallFtrs extends Command
             Artisan::call('storage:link', [], $this->output);
         }
 
+        $studentCount = \App\Models\Student::count();
+        $parentCount = \App\Models\User::where('role', 'parent')->count();
+
         $this->newLine();
-        $this->components->info('FTRS is ready.');
+        $this->components->info("FTRS is ready — {$studentCount} students, {$parentCount} parent accounts.");
         $this->table(
             ['Role', 'Login', 'Password'],
             [
@@ -42,6 +45,7 @@ class InstallFtrs extends Command
                 ['Parent (Mkumbo)', '+255655139724', 'Mkumbo@2025'],
                 ['Parent (Gordon)', '+255655139724', 'Gordon@2025'],
                 ['Parent (Chaula)', '+255773255214', 'Chaula@2025'],
+                ['Other parents', 'Each student\'s unique +255… phone', 'Parent@2025'],
             ]
         );
         $this->line('Start the server: <fg=cyan>serve.cmd</> then open <fg=cyan>http://127.0.0.1:8088</>');

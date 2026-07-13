@@ -1,7 +1,14 @@
 @extends('layouts.app')
-@section('title','Settings')
+@section('title', 'System Settings')
 
 @section('content')
+<div class="alert alert-info mb-3">
+  <i class="bi bi-shield-lock me-2"></i>
+  <strong>Developer / system configuration.</strong>
+  Configure school branding, SMS templates, bank accounts for parent payments, and fee setup.
+  Day-to-day receipts, students, and reports are handled by the <strong>School Admin</strong> account.
+</div>
+
 <div class="card mb-3">
   <div class="card-header fw-semibold"><i class="bi bi-building me-2"></i>School Information</div>
   <div class="card-body">
@@ -72,6 +79,42 @@
 
       <hr class="my-4">
 
+      <h6 class="fw-semibold text-school-primary mb-3"><i class="bi bi-bank me-2"></i>School Bank Accounts (fee payments)</h6>
+      <p class="small text-muted">Parents pay school fees into these accounts and upload their NMB or CRDB bank receipt PDF. The system verifies the beneficiary account, amount, and reference automatically.</p>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="bank_nmb_account_name" name="bank_nmb_account_name"
+              value="{{ old('bank_nmb_account_name', $setting->bank_nmb_account_name) }}" placeholder="Account name">
+            <label for="bank_nmb_account_name">NMB account name</label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="bank_nmb_account_number" name="bank_nmb_account_number"
+              value="{{ old('bank_nmb_account_number', $setting->bank_nmb_account_number) }}" placeholder="Account number">
+            <label for="bank_nmb_account_number">NMB account number</label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="bank_crdb_account_name" name="bank_crdb_account_name"
+              value="{{ old('bank_crdb_account_name', $setting->bank_crdb_account_name) }}" placeholder="Account name">
+            <label for="bank_crdb_account_name">CRDB account name</label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input type="text" class="form-control" id="bank_crdb_account_number" name="bank_crdb_account_number"
+              value="{{ old('bank_crdb_account_number', $setting->bank_crdb_account_number) }}" placeholder="Account number">
+            <label for="bank_crdb_account_number">CRDB account number</label>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
       <h6 class="fw-semibold text-school-primary mb-3"><i class="bi bi-phone me-2"></i>SMS Notifications</h6>
       <p class="small text-muted">Configure SMS for payment alerts and fee reminders. Use <strong>simulate mode</strong> on localhost (messages are logged, not sent).</p>
 
@@ -123,7 +166,39 @@
         </div>
       </div>
 
-      <x-form-actions :cancelUrl="route('dashboard')" submitLabel="Save settings" submitIcon="bi-check-lg" class="mt-4" />
+      <hr class="my-4">
+      <h6 class="fw-semibold text-school-primary mb-2"><i class="bi bi-chat-text me-2"></i>SMS Message Templates</h6>
+      <p class="small text-muted mb-3">
+        Templates are sent automatically by the system at <strong>14 days, 7 days, 3 days, and on the due date</strong> before fees are due, plus daily overdue notices.
+        Payment confirmations are sent when a receipt is recorded.
+        Placeholders:
+        @foreach(\App\Services\NotificationTemplateService::placeholders() as $placeholder)
+          <code>{{ $placeholder }}</code>@unless($loop->last), @endunless
+        @endforeach
+      </p>
+
+      @php $templateDefaults = app(\App\Services\NotificationTemplateService::class)->defaultTemplates(); @endphp
+
+      <div class="row g-3">
+        <div class="col-12">
+          <label for="sms_template_payment_received" class="form-label">Payment confirmation (sent automatically on payment)</label>
+          <textarea class="form-control" id="sms_template_payment_received" name="sms_template_payment_received" rows="2">{{ old('sms_template_payment_received', $setting->sms_template_payment_received ?: $templateDefaults['payment_received']) }}</textarea>
+        </div>
+        <div class="col-12">
+          <label for="sms_template_fee_reminder_14" class="form-label">2-week advance reminder (14 days before due date)</label>
+          <textarea class="form-control" id="sms_template_fee_reminder_14" name="sms_template_fee_reminder_14" rows="2">{{ old('sms_template_fee_reminder_14', $setting->sms_template_fee_reminder_14 ?: $templateDefaults['fee_reminder_14']) }}</textarea>
+        </div>
+        <div class="col-12">
+          <label for="sms_template_fee_reminder" class="form-label">Fee reminder (7 days, 3 days, due today — uses same template)</label>
+          <textarea class="form-control" id="sms_template_fee_reminder" name="sms_template_fee_reminder" rows="2">{{ old('sms_template_fee_reminder', $setting->sms_template_fee_reminder ?: $templateDefaults['fee_reminder']) }}</textarea>
+        </div>
+        <div class="col-12">
+          <label for="sms_template_overdue" class="form-label">Overdue notice (after due date passed)</label>
+          <textarea class="form-control" id="sms_template_overdue" name="sms_template_overdue" rows="2">{{ old('sms_template_overdue', $setting->sms_template_overdue ?: $templateDefaults['overdue']) }}</textarea>
+        </div>
+      </div>
+
+      <x-form-actions :cancelUrl="route('settings.edit')" submitLabel="Save settings" submitIcon="bi-check-lg" class="mt-4" />
     </form>
   </div>
 </div>

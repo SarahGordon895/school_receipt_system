@@ -42,20 +42,38 @@ class AppServiceProvider extends ServiceProvider
             return $student;
         });
 
-        View::composer('*', function ($view) {
-            $parentUnreadNotifications = 0;
+        Route::bind('log', function (string $value) {
+            $log = NotificationLog::findOrFail($value);
+            $user = Auth::user();
 
-            if (Auth::check() && Auth::user()->isParent()) {
-                $studentIds = Auth::user()->parentStudents()->pluck('id');
-                if ($studentIds->isNotEmpty()) {
-                    $parentUnreadNotifications = NotificationLog::query()
-                        ->whereIn('student_id', $studentIds)
-                        ->whereNull('read_at')
-                        ->count();
-                }
+            if ($user && $user->isParent() && ! $user->parentStudents()->whereKey($log->student_id)->exists()) {
+                abort(403, 'You can only access notifications for your own child.');
             }
 
-            $view->with('appSetting', Setting::first());
+            return $log;
+        });
+
+        View::composer(['layouts.app', 'layouts.guest'], function ($view) {
+            $parentUnreadNotifications = 0;
+            $appSetting = null;
+
+            try {
+                if (Auth::check() && Auth::user()->isParent()) {
+                    $studentIds = Auth::user()->parentStudents()->pluck('id');
+                    if ($studentIds->isNotEmpty()) {
+                        $parentUnreadNotifications = NotificationLog::query()
+                            ->whereIn('student_id', $studentIds)
+                            ->whereNull('read_at')
+                            ->count();
+                    }
+                }
+
+                $appSetting = Setting::current();
+            } catch (\Throwable) {
+                // Database unavailable — views still render; connection errors surface on real queries.
+            }
+
+            $view->with('appSetting', $appSetting);
             $view->with('parentUnreadNotifications', $parentUnreadNotifications);
         });
     }

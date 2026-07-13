@@ -7,6 +7,7 @@ use App\Models\NotificationLog;
 use App\Models\Receipt;
 use App\Models\Student;
 use App\Notifications\PaymentReceivedNotification;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -14,8 +15,36 @@ use Throwable;
 
 class ParentReminderService
 {
-    public function __construct(private SmsService $smsService)
+    public function __construct(
+        private SmsService $smsService,
+        private NotificationTemplateService $templates
+    ) {
+    }
+
+    /**
+     * Run all automated reminder milestones (14, 7, 3, 0 days before due + daily overdue).
+     *
+     * @return array{email: int, sms: int, milestones: array<string, int>}
+     */
+    public function runAutomatedReminders(): array
     {
+        $counts = ['email' => 0, 'sms' => 0, 'milestones' => []];
+
+        foreach (NotificationTemplateService::REMINDER_MILESTONES as $daysBefore) {
+            $eventType = $this->templates->eventTypeForMilestone($daysBefore);
+            $dueDate = now()->addDays($daysBefore)->toDateString();
+            $milestoneCounts = $this->sendMilestoneReminders($dueDate, $eventType);
+            $counts['email'] += $milestoneCounts['email'];
+            $counts['sms'] += $milestoneCounts['sms'];
+            $counts['milestones'][$eventType] = $milestoneCounts['sms'] + $milestoneCounts['email'];
+        }
+
+        $overdueCounts = $this->sendOverdueReminders();
+        $counts['email'] += $overdueCounts['email'];
+        $counts['sms'] += $overdueCounts['sms'];
+        $counts['milestones'][NotificationTemplateService::OVERDUE] = $overdueCounts['sms'] + $overdueCounts['email'];
+
+        return $counts;
     }
 
     /**
@@ -23,27 +52,88 @@ class ParentReminderService
      */
     public function sendScheduledReminders(int $days = 3): array
     {
-        $targetDate = now()->addDays(max(0, $days))->toDateString();
+        return $this->sendMilestoneReminders(
+            now()->addDays(max(0, $days))->toDateString(),
+            $this->templates->eventTypeForMilestone(max(0, $days))
+        );
+    }
 
+    public function notifyAdmission(Student $student): void
+    {
+        $student->loadMissing(['parentUser', 'primaryParentLink']);
+        $student->loadSum('receipts', 'amount');
+
+        if ($student->balance <= 0 || ! $student->hasParentContact()) {
+            return;
+        }
+
+        $eventType = $this->templates->resolveEventTypeForStudent($student);
+        $this->sendFeeReminder($student, true, true, null, false, $eventType);
+    }
+
+    /**
+     * @return array{email: int, sms: int}
+     */
+    private function sendMilestoneReminders(string $dueDate, string $eventType): array
+    {
         $students = Student::query()
             ->withSum('receipts', 'amount')
             ->with(['parentUser', 'primaryParentLink'])
             ->whereNotNull('fee_due_date')
-            ->whereDate('fee_due_date', '<=', $targetDate)
+            ->whereDate('fee_due_date', $dueDate)
             ->get()
             ->filter(fn (Student $student) => $student->balance > 0 && $student->hasParentContact());
 
         $counts = ['email' => 0, 'sms' => 0];
 
         foreach ($students as $student) {
-            $sendEmail = ! $this->alreadySentToday($student, 'email') && filled($student->resolveParentEmail());
-            $sendSms = ! $this->alreadySentToday($student, 'sms') && filled($student->resolveParentPhone());
+            $sendEmail = ! $this->alreadySentMilestone($student, 'email', $eventType) && filled($student->resolveParentEmail());
+            $sendSms = ! $this->alreadySentMilestone($student, 'sms', $eventType) && filled($student->resolveParentPhone());
 
             if (! $sendEmail && ! $sendSms) {
                 continue;
             }
 
-            $results = $this->sendFeeReminder($student, $sendSms, $sendEmail, null, false);
+            $results = $this->sendFeeReminder($student, $sendSms, $sendEmail, null, false, $eventType);
+
+            if ($results['email'] === true) {
+                $counts['email']++;
+            }
+
+            if ($results['sms'] === true) {
+                $counts['sms']++;
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * @return array{email: int, sms: int}
+     */
+    public function sendOverdueReminders(): array
+    {
+        $eventType = NotificationTemplateService::OVERDUE;
+
+        $students = Student::query()
+            ->withSum('receipts', 'amount')
+            ->with(['parentUser', 'primaryParentLink'])
+            ->whereNotNull('fee_due_date')
+            ->whereDate('fee_due_date', '<', now()->toDateString())
+            ->get()
+            ->filter(fn (Student $student) => $student->balance > 0 && $student->hasParentContact());
+
+        $counts = ['email' => 0, 'sms' => 0];
+
+        foreach ($students as $student) {
+            $sendEmail = ! $this->alreadySentToday($student, 'email', $eventType) && filled($student->resolveParentEmail());
+            $sendSms = ! $this->alreadySentToday($student, 'sms', $eventType) && filled($student->resolveParentPhone());
+
+            if (! $sendEmail && ! $sendSms) {
+                continue;
+            }
+
+            $results = $this->sendFeeReminder($student, $sendSms, $sendEmail, null, false, $eventType);
 
             if ($results['email'] === true) {
                 $counts['email']++;
@@ -72,6 +162,7 @@ class ParentReminderService
         }
 
         $receipt->loadMissing('paymentCategories');
+        $eventType = NotificationTemplateService::PAYMENT_RECEIVED;
         $emailTo = $student->resolveParentEmail();
 
         if ($emailTo) {
@@ -93,6 +184,7 @@ class ParentReminderService
             $this->recordLogOncePerDay(
                 $student,
                 'email',
+                $eventType,
                 $emailOk ? 'sent' : 'failed',
                 $emailMessage,
                 $emailMessage
@@ -102,20 +194,14 @@ class ParentReminderService
         $phone = $student->resolveParentPhone();
 
         if ($phone) {
-            $text = sprintf(
-                'Payment received: %s for %s. Amount Tsh %s. Balance Tsh %s.',
-                $receipt->receipt_no,
-                $student->name,
-                number_format($receipt->amount),
-                number_format($student->balance)
-            );
-
+            $text = $this->templates->render($eventType, $student, $receipt);
             $smsResult = $this->smsService->send($phone, $text);
             $smsMessage = 'Payment confirmation SMS for receipt '.$receipt->receipt_no.': '.$smsResult->detail;
 
             $this->recordLogOncePerDay(
                 $student,
                 'sms',
+                $eventType,
                 $smsResult->status,
                 $smsMessage,
                 $smsMessage,
@@ -133,10 +219,13 @@ class ParentReminderService
         bool $sendSms = true,
         bool $sendEmail = true,
         ?string $customSmsMessage = null,
-        bool $manual = true
+        bool $manual = true,
+        ?string $eventType = null
     ): array {
         $student->loadMissing(['parentUser', 'primaryParentLink']);
         $student->loadSum('receipts', 'amount');
+
+        $eventType ??= $this->templates->resolveEventTypeForStudent($student);
 
         $results = [
             'sms' => null,
@@ -156,11 +245,11 @@ class ParentReminderService
 
             if (! $emailTo) {
                 $results['errors']['email'] = 'No parent email on file for this student.';
-                $this->recordLog($student, 'email', 'skipped', "{$prefix} fee reminder email skipped: no parent email.");
-            } elseif (! $manual && $this->alreadySentToday($student, 'email')) {
+                $this->recordLog($student, 'email', $eventType, 'skipped', "{$prefix} fee reminder email skipped: no parent email.");
+            } elseif (! $manual && $this->alreadySentToday($student, 'email', $eventType)) {
                 $results['errors']['email'] = 'Fee reminder email already sent today.';
             } else {
-                $emailOk = $this->sendFeeReminderEmail($student, $emailTo);
+                $emailOk = $this->sendFeeReminderEmail($student, $emailTo, $eventType);
                 $results['email'] = $emailOk;
                 $results['email_detail'] = $emailOk
                     ? "Email sent to {$emailTo}."
@@ -169,10 +258,11 @@ class ParentReminderService
                 $this->recordLog(
                     $student,
                     'email',
+                    $eventType,
                     $emailOk ? 'sent' : 'failed',
                     $emailOk
-                        ? "{$prefix} fee reminder email sent to {$emailTo}."
-                        : "{$prefix} fee reminder email failed for {$emailTo}."
+                        ? "{$prefix} {$this->templates->eventLabel($eventType)} email sent to {$emailTo}."
+                        : "{$prefix} {$this->templates->eventLabel($eventType)} email failed for {$emailTo}."
                 );
             }
         }
@@ -183,13 +273,13 @@ class ParentReminderService
 
             if (! $phone) {
                 $results['errors']['sms'] = 'No parent phone on file for this student.';
-                $this->recordLog($student, 'sms', 'skipped', "{$prefix} fee reminder SMS skipped: no parent phone.");
-            } elseif (! $manual && $this->alreadySentToday($student, 'sms')) {
-                $results['errors']['sms'] = 'Fee reminder SMS already sent today.';
+                $this->recordLog($student, 'sms', $eventType, 'skipped', "{$prefix} SMS skipped: no parent phone.");
+            } elseif (! $manual && $this->alreadySentToday($student, 'sms', $eventType)) {
+                $results['errors']['sms'] = 'SMS already sent today for this message type.';
             } else {
                 $text = filled($customSmsMessage)
                     ? $customSmsMessage
-                    : $this->defaultSmsText($student);
+                    : $this->templates->render($eventType, $student);
 
                 $smsResult = $this->smsService->send($phone, $text);
                 $results['sms'] = $smsResult->succeeded();
@@ -198,8 +288,9 @@ class ParentReminderService
                 $this->recordLog(
                     $student,
                     'sms',
+                    $eventType,
                     $smsResult->status,
-                    "{$prefix} fee reminder SMS to {$phone}: {$smsResult->detail}",
+                    "{$prefix} {$this->templates->eventLabel($eventType)} SMS to {$phone}: {$smsResult->detail}",
                     $smsResult->gatewayUid,
                     $smsResult->deliveryStatus
                 );
@@ -210,8 +301,53 @@ class ParentReminderService
     }
 
     /**
-     * Resend a failed/skipped reminder and update the same log row.
+     * Send manual/template reminders to 1–5 selected students (bursar batch rule).
      *
+     * @param  Collection<int, Student>  $students
+     * @return list<string> status lines per student
+     */
+    public function sendBatchToStudents(
+        Collection $students,
+        bool $sendSms,
+        bool $sendEmail,
+        ?string $eventType = null
+    ): array {
+        $messages = [];
+
+        foreach ($students as $student) {
+            $type = $eventType ?? $this->templates->resolveEventTypeForStudent($student);
+            $results = $this->sendFeeReminder($student, $sendSms, $sendEmail, null, true, $type);
+            $messages[] = $student->name.': '.$this->summarizeSendResults($results);
+        }
+
+        return $messages;
+    }
+
+    /** @param array{sms: ?bool, email: ?bool, errors: array<string, string>, sms_detail?: ?string, email_detail?: ?string} $results */
+    public function summarizeSendResults(array $results): string
+    {
+        $parts = [];
+
+        if ($results['sms'] === true) {
+            $parts[] = $results['sms_detail'] ?? 'SMS sent';
+        } elseif ($results['sms'] === false) {
+            $parts[] = $results['sms_detail'] ?? 'SMS failed';
+        } elseif (isset($results['errors']['sms'])) {
+            $parts[] = 'SMS skipped';
+        }
+
+        if ($results['email'] === true) {
+            $parts[] = $results['email_detail'] ?? 'Email sent';
+        } elseif ($results['email'] === false) {
+            $parts[] = $results['email_detail'] ?? 'Email failed';
+        } elseif (isset($results['errors']['email'])) {
+            $parts[] = 'Email skipped';
+        }
+
+        return $parts === [] ? 'No message sent' : implode('; ', $parts);
+    }
+
+    /**
      * @return array{sms: ?bool, email: ?bool, errors: array<string, string>, sms_to: ?string, email_to: ?string, sms_detail: ?string, email_detail: ?string}
      */
     public function resendLog(NotificationLog $log): array
@@ -275,14 +411,16 @@ class ParentReminderService
             ];
         }
 
-        $text = $this->defaultSmsText($student);
+        $eventType = $log->event_type ?: $this->templates->resolveEventTypeForStudent($student);
+        $text = $this->templates->render($eventType, $student);
         $smsResult = $this->smsService->send($phone, $text);
         $status = $smsResult->status === 'skipped' ? 'skipped' : ($smsResult->succeeded() ? 'sent' : 'failed');
 
         $log->update([
             'status' => $status,
+            'event_type' => $eventType,
             'sent_on' => now()->toDateString(),
-            'message' => "Resent fee reminder SMS to {$phone}: {$smsResult->detail}",
+            'message' => "Resent {$this->templates->eventLabel($eventType)} SMS to {$phone}: {$smsResult->detail}",
             'gateway_uid' => $smsResult->gatewayUid,
             'delivery_status' => $smsResult->deliveryStatus,
         ]);
@@ -321,14 +459,16 @@ class ParentReminderService
             ];
         }
 
-        $emailOk = $this->sendFeeReminderEmail($student, $emailTo);
+        $emailOk = $this->sendFeeReminderEmail($student, $emailTo, $eventType);
+        $eventType = $log->event_type ?: $this->templates->resolveEventTypeForStudent($student);
 
         $log->update([
             'status' => $emailOk ? 'sent' : 'failed',
+            'event_type' => $eventType,
             'sent_on' => now()->toDateString(),
             'message' => $emailOk
-                ? "Resent fee reminder email to {$emailTo}."
-                : "Resent fee reminder email failed for {$emailTo}.",
+                ? "Resent {$this->templates->eventLabel($eventType)} email to {$emailTo}."
+                : "Resent email failed for {$emailTo}.",
             'gateway_uid' => null,
             'delivery_status' => $emailOk ? 'sent' : 'failed',
         ]);
@@ -346,10 +486,10 @@ class ParentReminderService
         ];
     }
 
-    private function sendFeeReminderEmail(Student $student, string $emailTo): bool
+    private function sendFeeReminderEmail(Student $student, string $emailTo, string $eventType): bool
     {
         try {
-            Mail::to($emailTo)->send(new FeeReminderMailable($student));
+            Mail::to($emailTo)->send(new FeeReminderMailable($student, $eventType));
 
             return true;
         } catch (Throwable $e) {
@@ -363,18 +503,23 @@ class ParentReminderService
         }
     }
 
-    private function defaultSmsText(Student $student): string
-    {
-        return 'Reminder: '.$student->name.' has outstanding fee balance of Tsh '.number_format($student->balance).
-            '. Due date: '.($student->fee_due_date?->format('Y-m-d') ?? 'N/A');
-    }
-
-    private function alreadySentToday(Student $student, string $channel): bool
+    private function alreadySentToday(Student $student, string $channel, ?string $eventType = null): bool
     {
         return NotificationLog::query()
             ->where('student_id', $student->id)
             ->where('channel', $channel)
+            ->when($eventType, fn ($q) => $q->where('event_type', $eventType))
             ->whereDate('sent_on', now()->toDateString())
+            ->where('status', 'sent')
+            ->exists();
+    }
+
+    private function alreadySentMilestone(Student $student, string $channel, string $eventType): bool
+    {
+        return NotificationLog::query()
+            ->where('student_id', $student->id)
+            ->where('channel', $channel)
+            ->where('event_type', $eventType)
             ->where('status', 'sent')
             ->exists();
     }
@@ -382,6 +527,7 @@ class ParentReminderService
     private function recordLog(
         Student $student,
         string $channel,
+        string $eventType,
         string $status,
         string $message,
         ?string $gatewayUid = null,
@@ -390,6 +536,7 @@ class ParentReminderService
         return NotificationLog::create([
             'student_id' => $student->id,
             'channel' => $channel,
+            'event_type' => $eventType,
             'status' => $status,
             'sent_on' => now()->toDateString(),
             'message' => $message,
@@ -401,6 +548,7 @@ class ParentReminderService
     private function recordLogOncePerDay(
         Student $student,
         string $channel,
+        string $eventType,
         string $status,
         string $message,
         string $dedupeKey,
@@ -410,6 +558,7 @@ class ParentReminderService
         $exists = NotificationLog::query()
             ->where('student_id', $student->id)
             ->where('channel', $channel)
+            ->where('event_type', $eventType)
             ->whereDate('sent_on', now()->toDateString())
             ->where('message', $dedupeKey)
             ->exists();
@@ -418,6 +567,6 @@ class ParentReminderService
             return;
         }
 
-        $this->recordLog($student, $channel, $status, $message, $gatewayUid, $deliveryStatus);
+        $this->recordLog($student, $channel, $eventType, $status, $message, $gatewayUid, $deliveryStatus);
     }
 }

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BatchParentReminderRequest;
 use App\Models\NotificationLog;
+use App\Models\Setting;
 use App\Models\Student;
+use App\Services\NotificationTemplateService;
 use App\Services\ParentReminderService;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
@@ -206,49 +209,57 @@ class NotificationLogController extends Controller
             ->withSum('receipts', 'amount')
             ->with(['parentUser', 'primaryParentLink'])
             ->orderBy('name')
-            ->get(['id', 'name', 'admission_no', 'class_name', 'parent_phone', 'parent_email', 'parent_user_id', 'fee_due_date', 'expected_total_fee']);
+            ->get(['id', 'name', 'admission_no', 'class_name', 'parent_phone', 'parent_email', 'parent_user_id', 'fee_due_date', 'expected_total_fee'])
+            ->filter(fn (Student $student) => $student->hasParentContact());
+
+        $templateService = app(NotificationTemplateService::class);
+        $defaults = $templateService->defaultTemplates();
+        $setting = Setting::query()->first();
+
+        $templates = [];
+        foreach (NotificationTemplateService::manualSendEventTypes() as $type) {
+            $templates[$type] = match ($type) {
+                NotificationTemplateService::PAYMENT_RECEIVED => $setting?->sms_template_payment_received ?: $defaults[$type],
+                NotificationTemplateService::FEE_REMINDER_14 => $setting?->sms_template_fee_reminder_14 ?: $defaults[$type],
+                NotificationTemplateService::OVERDUE => $setting?->sms_template_overdue ?: $defaults[$type],
+                default => $setting?->sms_template_fee_reminder ?: ($defaults[$type] ?? $defaults[NotificationTemplateService::FEE_REMINDER]),
+            };
+        }
 
         return view('notification-logs.send', [
             'students' => $students,
             'selectedStudentId' => $request->integer('student_id') ?: null,
+            'selectedMessageType' => $request->string('message_type')->toString() ?: 'fee_reminder_14',
+            'templates' => $templates,
+            'eventTypes' => NotificationTemplateService::manualSendEventTypes(),
+            'eventLabels' => collect(NotificationTemplateService::manualSendEventTypes())
+                ->mapWithKeys(fn ($t) => [$t => $templateService->eventLabel($t)])
+                ->all(),
+            'maxBatchParents' => (int) config('notifications.max_batch_parents', 5),
+            'minBatchParents' => (int) config('notifications.min_batch_parents', 1),
         ]);
     }
 
-    public function sendStore(Request $request)
+    public function sendStore(BatchParentReminderRequest $request)
     {
-        $data = $request->validate([
-            'student_id' => ['required', Rule::exists('students', 'id')],
-            'send_sms' => ['nullable', 'boolean'],
-            'send_email' => ['nullable', 'boolean'],
-            'custom_sms_message' => ['nullable', 'string', 'max:500'],
-        ]);
+        $data = $request->validated();
 
-        $sendSms = $request->boolean('send_sms');
-        $sendEmail = $request->boolean('send_email');
-
-        if (! $sendSms && ! $sendEmail) {
-            return back()
-                ->withInput()
-                ->withErrors(['send_sms' => 'Select at least one channel (SMS or email).']);
-        }
-
-        $student = Student::query()
+        $students = Student::query()
             ->with(['parentUser', 'primaryParentLink'])
             ->withSum('receipts', 'amount')
-            ->findOrFail($data['student_id']);
+            ->whereIn('id', $data['student_ids'])
+            ->get();
 
-        $results = $this->parentReminderService->sendFeeReminder(
-            $student,
-            $sendSms,
-            $sendEmail,
-            $data['custom_sms_message'] ?? null
+        $messages = $this->parentReminderService->sendBatchToStudents(
+            $students,
+            $request->sendSms(),
+            $request->sendEmail(),
+            $data['message_type']
         );
 
-        $status = $this->buildSendStatusMessage($results);
-
         return redirect()
-            ->route('notification-logs.index', ['student_id' => $student->id])
-            ->with('status', $status);
+            ->route('notification-logs.index')
+            ->with('status', 'Bulk send complete. '.implode(' | ', $messages));
     }
 
     public function sendToStudent(Request $request, Student $student)
@@ -263,7 +274,14 @@ class NotificationLogController extends Controller
         $sendSms = $request->boolean('send_sms', true);
         $sendEmail = $request->boolean('send_email', true);
 
-        $results = $this->parentReminderService->sendFeeReminder($student, $sendSms, $sendEmail);
+        $results = $this->parentReminderService->sendFeeReminder(
+            $student,
+            $sendSms,
+            $sendEmail,
+            null,
+            true,
+            app(NotificationTemplateService::class)->resolveEventTypeForStudent($student)
+        );
 
         return back()->with('status', $this->buildSendStatusMessage($results));
     }

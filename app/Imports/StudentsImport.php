@@ -2,14 +2,15 @@
 
 namespace App\Imports;
 
-use App\Models\Student;
-use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\ToArray;
 
-class StudentsImport implements ToModel
+/**
+ * Used only to read spreadsheet rows into a plain array for StudentImportService.
+ */
+class StudentsImport implements ToArray
 {
-    public function model(array $row)
+    public function array(array $array): array
     {
-        $name = trim((string) ($row[0] ?? ''));
-        return $name ? Student::firstOrCreate(['name' => $name]) : null;
+        return $array;
     }
 }

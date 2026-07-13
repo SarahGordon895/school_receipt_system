@@ -22,6 +22,13 @@ class Receipt extends Model
         'user_id'
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'payment_date' => 'date',
+        ];
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Receipt $r) {
@@ -61,6 +68,11 @@ class Receipt extends Model
         return $this->belongsToMany(PaymentCategory::class, 'receipt_payment_category')
             ->withPivot('amount')
             ->withTimestamps();
+    }
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class);
     }
 
     public function user()

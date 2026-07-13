@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Data\StudentImportResult;
 use App\Models\FeeStructure;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\ParentReminderService;
+use App\Services\StudentImportService;
 use App\Support\ParentStudentAdmission;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -59,7 +62,10 @@ class StudentController extends Controller
 
         $student->feeStructures()->sync($data['fee_structure_ids'] ?? []);
 
-        return redirect()->route('students.index')->with('status', 'Student admitted and linked to parent portal account.');
+        $student->loadSum('receipts', 'amount');
+        app(ParentReminderService::class)->notifyAdmission($student->fresh());
+
+        return redirect()->route('students.index')->with('status', 'Student admitted and linked to parent portal account. Fee reminder sent to parent if applicable.');
     }
 
     public function edit(Student $student)
@@ -122,27 +128,31 @@ class StudentController extends Controller
         return view('students.import');
     }
 
-    public function importStore(Request $request)
+    public function importStore(Request $request, StudentImportService $importService)
     {
         $data = $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,csv,txt'],
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
         ]);
 
-        if (class_exists(\Maatwebsite\Excel\Facades\Excel::class)) {
-            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\StudentsImport, $data['file']);
-        } else {
-            $path = $data['file']->getRealPath();
-            $h = fopen($path, 'r');
-            while (($row = fgetcsv($h)) !== false) {
-                $name = trim((string) ($row[0] ?? ''));
-                if ($name !== '') {
-                    Student::firstOrCreate(['name' => $name]);
-                }
-            }
-            fclose($h);
+        $result = $importService->import($data['file'], $request->user());
+
+        if ($result->totalRows() === 0) {
+            return back()->with('error', 'No student rows were found in the uploaded file. Check the format and try again.');
         }
 
-        return redirect()->route('students.index')->with('status', 'Students imported.');
+        $request->session()->flash('import_result', $result->toArray());
+
+        return redirect()->route('students.import.result');
+    }
+
+    public function importResult(Request $request)
+    {
+        $payload = $request->session()->get('import_result');
+        abort_unless(is_array($payload), 404);
+
+        $result = StudentImportResult::fromSessionArray($payload);
+
+        return view('students.import-result', compact('result'));
     }
 
     private function validatedStudentData(Request $request, ?Student $student = null): array

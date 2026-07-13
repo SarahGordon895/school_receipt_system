@@ -23,16 +23,15 @@ class SyncParentPhones extends Command
         $this->call(SettingSeeder::class);
         $this->call(DemoDataSeeder::class);
 
+        $parentCount = User::query()->where('role', 'parent')->count();
+        $this->line("Parent accounts: {$parentCount}");
+
         $this->table(
             ['Parent', 'Phone', 'Email', 'Password'],
             User::query()
                 ->where('role', 'parent')
-                ->whereIn('email', [
-                    'parent.mkumbo@mbonea.sc.tz',
-                    'parent.gordon@mbonea.sc.tz',
-                    'parent.chaula@mbonea.sc.tz',
-                ])
-                ->orderBy('email')
+                ->orderBy('id')
+                ->limit(8)
                 ->get(['name', 'phone', 'email'])
                 ->map(fn (User $u) => [
                     $u->name,
@@ -42,7 +41,7 @@ class SyncParentPhones extends Command
                         'parent.mkumbo@mbonea.sc.tz' => 'Mkumbo@2025',
                         'parent.gordon@mbonea.sc.tz' => 'Gordon@2025',
                         'parent.chaula@mbonea.sc.tz' => 'Chaula@2025',
-                        default => '—',
+                        default => 'Parent@2025',
                     },
                 ])
                 ->all()
@@ -56,7 +55,8 @@ class SyncParentPhones extends Command
         }
 
         $students = Student::query()
-            ->whereIn('admission_no', ['MBN-2024-001', 'MBN-2024-002', 'MBN-2024-003'])
+            ->orderBy('admission_no')
+            ->limit(10)
             ->get(['admission_no', 'name', 'parent_phone']);
 
         $this->table(

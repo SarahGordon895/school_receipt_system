@@ -46,7 +46,7 @@
           <i class="bi bi-exclamation-circle text-danger"></i> Outstanding
         </div>
         <div class="fs-4 fw-bold mt-2 text-danger">Tsh {{ $metrics['outstanding_total'] }}</div>
-        <div class="small text-muted mt-1">{{ $metrics['outstanding_students'] }} students • {{ $metrics['overdue_count'] }} overdue</div>
+        <div class="small text-muted mt-1">{{ $metrics['outstanding_students'] }} students • {{ $metrics['overdue_count'] }} overdue • {{ $metrics['due_in_14_days'] }} due in 14 days</div>
         <div class="mt-2">
           <x-icon-btn :href="route('reports.unpaid')" icon="bi-list-check" label="View unpaid report" variant="outline-danger" size="sm" :iconOnly="false" />
         </div>
@@ -56,10 +56,10 @@
 
   <div class="col-12">
     <div class="toolbar-icon-group">
+      <x-icon-btn :href="route('messages.index')" icon="bi-chat-dots" label="SMS &amp; Email" variant="success" :iconOnly="false" />
+      <x-icon-btn :href="route('reports.index')" icon="bi-graph-up" label="Bursar reports" variant="outline-primary" :iconOnly="false" />
       <x-icon-btn :href="route('receipts.create')" icon="bi-receipt-cutoff" label="Generate receipt" variant="primary" :iconOnly="false" />
       <x-icon-btn :href="route('students.create')" icon="bi-person-plus" label="Register student" variant="outline-primary" :iconOnly="false" />
-      <x-icon-btn :href="route('reports.index')" icon="bi-graph-up" label="Reports" variant="outline-secondary" :iconOnly="false" />
-      <x-icon-btn :href="route('notification-logs.index')" icon="bi-bell" label="Notifications" variant="outline-secondary" :iconOnly="false" />
     </div>
   </div>
 

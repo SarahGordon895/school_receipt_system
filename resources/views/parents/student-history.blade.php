@@ -3,8 +3,16 @@
 
 @section('actions')
   <div class="page-actions">
-    <x-icon-btn :href="route('parent.dashboard')" icon="arrow-left" label="Back to my children" variant="outline-secondary" :iconOnly="false" />
-    <x-icon-btn type="button" icon="printer" label="Print statement" variant="outline-primary" :iconOnly="false" onclick="window.print()" />
+      <x-icon-btn :href="route('parent.dashboard')" icon="arrow-left" label="Back to my children" variant="outline-secondary" :iconOnly="false" />
+    @if(!$student->isFullyPaid())
+      <x-icon-btn :href="route('parent.bank-payments.index', ['student_id' => $student->id])" icon="bi-bank"
+        label="Upload bank receipt" variant="primary" :iconOnly="false" />
+    @endif
+    @if($student->isFullyPaid())
+      <x-icon-btn :href="route('parent.students.clearance-certificate', $student)" icon="bi-file-earmark-pdf"
+        label="Download clearance certificate" variant="success" :iconOnly="false" />
+    @endif
+      <x-icon-btn type="button" icon="printer" label="Print statement" variant="outline-primary" :iconOnly="false" onclick="window.print()" />
   </div>
 @endsection
 
@@ -28,10 +36,15 @@
         @endif
       </div>
       <div class="col-md-4 text-md-end">
-        <div class="small text-muted">Outstanding balance</div>
-        <div class="fs-4 fw-bold {{ $student->balance > 0 ? 'text-danger' : 'text-success' }}">
-          Tsh {{ number_format($student->balance) }}
-        </div>
+        @if($student->isFullyPaid())
+          <span class="badge text-bg-success mb-2"><i class="bi bi-check-circle me-1"></i>Fully paid</span>
+          <div class="small text-muted">Outstanding balance</div>
+          <div class="fs-4 fw-bold text-success">Tsh 0</div>
+          <div class="small text-success mt-1">All assigned fees have been cleared.</div>
+        @else
+          <div class="small text-muted">Outstanding balance</div>
+          <div class="fs-4 fw-bold text-danger">Tsh {{ number_format($student->balance) }}</div>
+        @endif
       </div>
     </div>
   </div>

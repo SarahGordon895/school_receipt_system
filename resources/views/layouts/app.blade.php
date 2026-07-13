@@ -12,7 +12,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
 
     <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
     @include('layouts.partials.icons-head')
@@ -21,7 +21,7 @@
     @stack('head')
 </head>
 
-<body class="school-app-body">
+<body class="school-app-body @if(auth()->user()->isParent()) parent-portal-body @endif">
     <nav class="navbar navbar-expand-lg navbar-school fixed-top">
         <div class="container-fluid px-3 px-lg-4">
             <button class="btn btn-link text-dark d-lg-none p-1 me-1" type="button" id="sidebarToggle"
@@ -30,12 +30,13 @@
             </button>
 
             @php
-                $homeRoute = auth()->check() && auth()->user()->isParent() ? 'parent.dashboard' : 'dashboard';
+                $homeRoute = auth()->user()->home_route;
             @endphp
             <a class="navbar-brand d-flex align-items-center gap-2 text-truncate" href="{{ route($homeRoute) }}">
                 @if ($appSetting?->logo_path)
                     <img src="{{ asset('storage/' . $appSetting->logo_path) }}" alt=""
-                        class="rounded flex-shrink-0" style="height:32px;width:auto;object-fit:contain;">
+                        class="rounded flex-shrink-0" width="32" height="32" decoding="async"
+                        style="height:32px;width:auto;object-fit:contain;">
                 @endif
                 <span class="text-truncate">{{ optional($appSetting)->school_name ?? 'School Receipts' }}</span>
             </a>
@@ -58,7 +59,7 @@
 
                     @yield('actions')
 
-                    @if(auth()->user()->hasRole('super_admin', 'school_admin'))
+                    @if(auth()->user()->canManageSchool())
                         <x-icon-btn :href="route('receipts.create')" icon="receipt-cutoff" label="Generate receipt"
                             variant="primary" :iconOnly="false" class="order-lg-last" />
                     @endif
@@ -102,6 +103,13 @@
                 </div>
             @endif
 
+            @if (session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-x-circle me-2"></i>{{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="alert alert-danger alert-dismissible fade show">
                     <div class="fw-semibold mb-1">Please fix the following:</div>
@@ -123,7 +131,11 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    @if(auth()->user()->isParent())
+        @include('layouts.partials.parent-mobile-nav')
+    @endif
+
+    <script src="{{ asset('js/bootstrap.bundle.min.js') }}" defer></script>
     <script>
         (function () {
             const sidebar = document.getElementById('sidebarSchool');

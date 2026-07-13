@@ -134,6 +134,7 @@ class ReceiptController extends Controller
         // Calculate total amount from all payment categories
         $totalAmount = array_sum(array_column($data['payment_categories'], 'amount'));
         $data['amount'] = $totalAmount;
+        $previousAmount = (int) $receipt->amount;
 
         $receipt->update($data);
 
@@ -143,6 +144,11 @@ class ReceiptController extends Controller
             $categoriesWithAmounts[$category['category_id']] = $category['amount'];
         }
         $receipt->syncPaymentCategories($categoriesWithAmounts);
+
+        $receipt->load('paymentCategories');
+        if ($receipt->student_id && (int) $data['amount'] > $previousAmount) {
+            app(ParentPaymentNotifier::class)->notify($receipt->fresh(['paymentCategories']));
+        }
 
         return redirect()->route('receipts.show', $receipt)->with('status', 'Receipt updated successfully!');
     }

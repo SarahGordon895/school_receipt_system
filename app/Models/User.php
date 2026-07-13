@@ -43,6 +43,21 @@ class User extends Authenticatable
         return $this->normalized_role === 'parent';
     }
 
+    public function isSchoolAdmin(): bool
+    {
+        return $this->normalized_role === 'school_admin';
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->normalized_role === 'super_admin';
+    }
+
+    public function canManageSchool(): bool
+    {
+        return $this->isSchoolAdmin() || $this->isSuperAdmin();
+    }
+
     public function getNormalizedRoleAttribute(): string
     {
         return $this->role ?: 'school_admin';
@@ -50,7 +65,10 @@ class User extends Authenticatable
 
     public function getHomeRouteAttribute(): string
     {
-        return $this->isParent() ? 'parent.dashboard' : 'dashboard';
+        return match ($this->normalized_role) {
+            'parent' => 'parent.dashboard',
+            default => 'dashboard',
+        };
     }
 
     public static function normalizePhone(string $phone): string

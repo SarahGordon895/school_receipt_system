@@ -26,7 +26,7 @@ class ManualParentReminderTest extends TestCase
         $this->actingAs($admin)
             ->get(route('notification-logs.send.create'))
             ->assertOk()
-            ->assertSee('Send fee reminder to parent');
+            ->assertSee('Send to parents using template');
     }
 
     public function test_parent_cannot_access_send_reminder_form(): void
@@ -55,6 +55,7 @@ class ManualParentReminderTest extends TestCase
             'parent_email' => $parent->email,
             'parent_phone' => '+255700000001',
             'fee_due_date' => now()->addDays(3)->toDateString(),
+            'expected_total_fee' => 300000,
         ]);
 
         $sms = Mockery::mock(SmsService::class);
@@ -62,19 +63,56 @@ class ManualParentReminderTest extends TestCase
         $this->app->instance(SmsService::class, $sms);
 
         $response = $this->actingAs($admin)->post(route('notification-logs.send.store'), [
-            'student_id' => $student->id,
+            'student_ids' => [$student->id],
+            'message_type' => 'fee_reminder_14',
             'send_sms' => '1',
             'send_email' => '0',
         ]);
 
-        $response->assertRedirect(route('notification-logs.index', ['student_id' => $student->id]));
+        $response->assertRedirect(route('notification-logs.index'));
         $response->assertSessionHas('status');
 
         $this->assertDatabaseHas('notification_logs', [
             'student_id' => $student->id,
             'channel' => 'sms',
             'status' => 'sent',
+            'event_type' => 'fee_reminder_14',
         ]);
+    }
+
+    public function test_manual_send_rejects_more_than_five_parents(): void
+    {
+        $admin = User::factory()->create(['role' => 'school_admin']);
+        $ids = [];
+
+        for ($i = 1; $i <= 6; $i++) {
+            $parent = User::factory()->create([
+                'role' => 'parent',
+                'email' => "parent{$i}@example.com",
+                'phone' => '+2557000000'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+            ]);
+
+            $student = $this->admitStudentForParent($parent, [
+                'admission_no' => 'ADM-BATCH-'.$i,
+                'name' => 'Batch Student '.$i,
+                'parent_email' => $parent->email,
+                'parent_phone' => $parent->phone,
+                'expected_total_fee' => 100000,
+            ]);
+
+            $ids[] = $student->id;
+        }
+
+        $this->actingAs($admin)
+            ->from(route('notification-logs.send.create'))
+            ->post(route('notification-logs.send.store'), [
+                'student_ids' => $ids,
+                'message_type' => 'fee_reminder_14',
+                'send_sms' => '1',
+                'send_email' => '0',
+            ])
+            ->assertRedirect(route('notification-logs.send.create'))
+            ->assertSessionHasErrors(['student_ids']);
     }
 
     public function test_send_requires_at_least_one_channel(): void
@@ -85,19 +123,21 @@ class ManualParentReminderTest extends TestCase
             'admission_no' => 'ADM-201',
             'name' => 'Channel Test Student',
             'parent_email' => $parent->email,
+            'expected_total_fee' => 100000,
         ]);
 
         $response = $this->actingAs($admin)
             ->from(route('notification-logs.send.create'))
             ->post(route('notification-logs.send.store'), [
-                'student_id' => $student->id,
+                'student_ids' => [$student->id],
+                'message_type' => 'fee_reminder_14',
             ]);
 
         $response->assertRedirect(route('notification-logs.send.create'));
         $response->assertSessionHasErrors(['send_sms']);
     }
 
-    public function test_quick_send_from_unpaid_report_creates_logs(): void
+    public function test_unpaid_report_batch_send_to_selected_parents(): void
     {
         Mail::fake();
 
@@ -122,7 +162,9 @@ class ManualParentReminderTest extends TestCase
 
         $response = $this->actingAs($admin)
             ->from(route('reports.unpaid'))
-            ->post(route('students.send-reminder', $student), [
+            ->post(route('reports.unpaid.send-reminders'), [
+                'student_ids' => [$student->id],
+                'message_type' => 'fee_reminder_14',
                 'send_sms' => '1',
                 'send_email' => '1',
             ]);

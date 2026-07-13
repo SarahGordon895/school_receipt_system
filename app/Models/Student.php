@@ -96,7 +96,11 @@ class Student extends Model
 
     public function getExpectedAmountAttribute(): int
     {
-        $fromStructures = (int) $this->feeStructures()->sum('amount');
+        if ($this->relationLoaded('feeStructures')) {
+            $fromStructures = (int) $this->feeStructures->sum('amount');
+        } else {
+            $fromStructures = (int) $this->feeStructures()->sum('amount');
+        }
 
         return $fromStructures > 0 ? $fromStructures : (int) $this->expected_total_fee;
     }
@@ -104,6 +108,43 @@ class Student extends Model
     public function getBalanceAttribute(): int
     {
         return max(0, $this->expected_amount - $this->paid_amount);
+    }
+
+    public function isFullyPaid(): bool
+    {
+        return $this->expected_amount > 0 && $this->balance <= 0;
+    }
+
+    public function hasOutstandingBalance(): bool
+    {
+        return $this->balance > 0;
+    }
+
+    public function paymentStatusLabel(): string
+    {
+        if ($this->expected_amount <= 0) {
+            return 'No fees assigned';
+        }
+
+        if ($this->isFullyPaid()) {
+            return 'Fully paid';
+        }
+
+        if ($this->fee_due_date && $this->fee_due_date->isPast()) {
+            return 'Overdue';
+        }
+
+        return 'Outstanding';
+    }
+
+    public function paymentStatusBadge(): string
+    {
+        return match ($this->paymentStatusLabel()) {
+            'Fully paid' => 'success',
+            'Overdue' => 'danger',
+            'No fees assigned' => 'secondary',
+            default => 'warning',
+        };
     }
 
     public function resolveParentPhone(): ?string

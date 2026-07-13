@@ -3,7 +3,8 @@
 
 @section('actions')
     <div class="page-actions">
-        <x-icon-btn :href="route('notification-logs.send.create')" icon="bi-send" label="Send to parent" variant="primary" :iconOnly="false" />
+        <x-icon-btn :href="route('reports.messages')" icon="bi-file-earmark-text" label="Export report" variant="outline-primary" :iconOnly="false" />
+        <x-icon-btn :href="route('messages.index')" icon="bi-send" label="Send SMS &amp; email" variant="primary" :iconOnly="false" />
         <x-icon-btn :href="route('notification-logs.create')" icon="bi-journal-plus" label="Record log" variant="outline-secondary" :iconOnly="false" />
     </div>
 @endsection

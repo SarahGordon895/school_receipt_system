@@ -10,7 +10,7 @@
             data-login-type="school_admin" role="tab"
             aria-selected="{{ $loginType === 'school_admin' ? 'true' : 'false' }}">
             <i class="bi bi-building" aria-hidden="true"></i>
-            <span>Admin</span>
+            <span>School Admin</span>
         </button>
         <button type="button" class="login-role-tab {{ $loginType === 'parent' ? 'active' : '' }}"
             data-login-type="parent" role="tab"
@@ -22,7 +22,7 @@
             data-login-type="super_admin" role="tab"
             aria-selected="{{ $loginType === 'super_admin' ? 'true' : 'false' }}">
             <i class="bi bi-shield-lock" aria-hidden="true"></i>
-            <span>Super Admin</span>
+            <span>Developer</span>
         </button>
     </div>
 

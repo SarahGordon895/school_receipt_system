@@ -8,4 +8,5 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('fees:send-reminders --days=3')->dailyAt('07:00');
+// Full automated fee reminders: 14 days, 7 days, 3 days, due day, and overdue — once daily.
+Schedule::command('fees:send-reminders')->dailyAt('06:00');

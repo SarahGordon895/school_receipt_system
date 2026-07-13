@@ -182,7 +182,7 @@ class NotificationLogControllerTest extends TestCase
 
         $failedLog->refresh();
         $this->assertSame('sent', $failedLog->status);
-        $this->assertStringContainsString('Resent fee reminder SMS', (string) $failedLog->message);
+        $this->assertStringContainsString('Resent Fee reminder', (string) $failedLog->message);
     }
 
     public function test_resend_rejects_already_sent_logs(): void
