@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="520" viewBox="0 0 820 520">
+  <rect width="100%" height="100%" fill="white"/>
+  <text x="410" y="28" text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold">ENTITY RELATIONSHIP DIAGRAM (ERD)</text>
+  <text x="410" y="46" text-anchor="middle" font-family="Arial" font-size="11">Mbonea Fee Tracking &amp; Receipt System (FTRS)</text>
+
+  <!-- Entities -->
+  <rect x="40" y="70" width="130" height="55" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="105" y="102" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">SUPER ADMIN</text>
+
+  <rect x="40" y="200" width="130" height="55" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="105" y="232" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">SCHOOL ADMIN</text>
+
+  <rect x="250" y="320" width="110" height="50" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="305" y="350" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">PARENT</text>
+
+  <rect x="430" y="200" width="110" height="50" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="485" y="230" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">STUDENT</text>
+
+  <rect x="620" y="200" width="110" height="50" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="675" y="230" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">PAYMENT</text>
+
+  <rect x="620" y="360" width="130" height="50" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="685" y="390" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">NOTIFICATION</text>
+
+  <!-- Relationship diamonds -->
+  <polygon points="105,155 135,175 105,195 75,175" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="105" y="179" text-anchor="middle" font-family="Arial" font-size="9">manages</text>
+
+  <polygon points="105,285 135,305 105,325 75,305" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="105" y="309" text-anchor="middle" font-family="Arial" font-size="9">registers</text>
+
+  <polygon points="360,285 390,305 360,325 330,305" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="360" y="309" text-anchor="middle" font-family="Arial" font-size="9">has</text>
+
+  <polygon points="555,285 585,305 555,325 525,305" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="555" y="309" text-anchor="middle" font-family="Arial" font-size="9">receives</text>
+
+  <polygon points="360,155 390,175 360,195 330,175" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="360" y="179" text-anchor="middle" font-family="Arial" font-size="9">makes</text>
+
+  <polygon points="555,155 585,175 555,195 525,175" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="555" y="179" text-anchor="middle" font-family="Arial" font-size="9">gets</text>
+
+  <!-- Connector lines -->
+  <line x1="105" y1="125" x2="105" y2="155" stroke="black" stroke-width="1.2"/>
+  <line x1="105" y1="195" x2="105" y2="200" stroke="black" stroke-width="1.2"/>
+  <text x="88" y="148" font-family="Arial" font-size="10">1</text>
+  <text x="88" y="198" font-family="Arial" font-size="10">N</text>
+
+  <line x1="105" y1="255" x2="105" y2="285" stroke="black" stroke-width="1.2"/>
+  <line x1="135" y1="305" x2="250" y2="335" stroke="black" stroke-width="1.2"/>
+  <line x1="105" y1="325" x2="105" y2="360" stroke="black" stroke-width="1.2" opacity="0"/>
+  <line x1="170" y1="227" x2="430" y2="227" stroke="black" stroke-width="1.2"/>
+  <text x="280" y="218" font-family="Arial" font-size="10">1</text>
+  <text x="400" y="218" font-family="Arial" font-size="10">N</text>
+
+  <line x1="305" y1="320" x2="360" y2="325" stroke="black" stroke-width="1.2"/>
+  <line x1="390" y1="305" x2="430" y2="250" stroke="black" stroke-width="1.2"/>
+  <text x="318" y="312" font-family="Arial" font-size="10">1</text>
+  <text x="410" y="268" font-family="Arial" font-size="10">N</text>
+
+  <line x1="360" y1="285" x2="360" y2="250" stroke="black" stroke-width="1.2"/>
+  <line x1="305" y1="175" x2="330" y2="175" stroke="black" stroke-width="1.2"/>
+  <line x1="390" y1="175" x2="430" y2="225" stroke="black" stroke-width="1.2"/>
+  <text x="318" y="168" font-family="Arial" font-size="10">1</text>
+  <text x="410" y="210" font-family="Arial" font-size="10">N</text>
+
+  <line x1="540" y1="225" x2="620" y2="225" stroke="black" stroke-width="1.2"/>
+  <text x="565" y="218" font-family="Arial" font-size="10">1</text>
+  <text x="600" y="218" font-family="Arial" font-size="10">N</text>
+
+  <line x1="540" y1="235" x2="585" y2="175" stroke="black" stroke-width="1.2"/>
+  <line x1="585" y1="195" x2="620" y2="360" stroke="black" stroke-width="1.2"/>
+  <text x="548" y="198" font-family="Arial" font-size="10">1</text>
+  <text x="610" y="340" font-family="Arial" font-size="10">N</text>
+
+  <!-- Attribute ovals (sample like handwritten ERD) -->
+  <ellipse cx="250" cy="95" rx="48" ry="16" fill="white" stroke="black" stroke-width="1"/>
+  <text x="250" y="99" text-anchor="middle" font-family="Arial" font-size="9">admin_id (PK)</text>
+  <line x1="220" y1="105" x2="170" y2="95" stroke="black" stroke-width="1"/>
+
+  <ellipse cx="485" cy="95" rx="40" ry="16" fill="white" stroke="black" stroke-width="1"/>
+  <text x="485" y="99" text-anchor="middle" font-family="Arial" font-size="9">reg_no (PK)</text>
+  <line x1="485" y1="111" x2="485" y2="200" stroke="black" stroke-width="1"/>
+
+  <ellipse cx="675" cy="95" rx="52" ry="16" fill="white" stroke="black" stroke-width="1"/>
+  <text x="675" y="99" text-anchor="middle" font-family="Arial" font-size="9">payment_id (PK)</text>
+  <line x1="675" y1="111" x2="675" y2="200" stroke="black" stroke-width="1"/>
+
+  <ellipse cx="305" cy="420" rx="55" ry="16" fill="white" stroke="black" stroke-width="1"/>
+  <text x="305" y="424" text-anchor="middle" font-family="Arial" font-size="9">phone_number</text>
+  <line x1="305" y1="404" x2="305" y2="370" stroke="black" stroke-width="1"/>
+
+  <!-- Legend -->
+  <rect x="40" y="430" width="200" height="70" fill="white" stroke="black" stroke-width="1.5"/>
+  <text x="50" y="450" font-family="Arial" font-size="10" font-weight="bold">Legend</text>
+  <text x="50" y="468" font-family="Arial" font-size="10">PK = Primary Key</text>
+  <text x="50" y="484" font-family="Arial" font-size="10">FK = Foreign Key</text>
+  <text x="120" y="468" font-family="Arial" font-size="10">1 = One</text>
+  <text x="120" y="484" font-family="Arial" font-size="10">N = Many</text>
+</svg>

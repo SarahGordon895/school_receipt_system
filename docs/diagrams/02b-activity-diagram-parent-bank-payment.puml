@@ -1,0 +1,38 @@
+@startuml FTRS_Activity_Parent_Bank_Payment
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ActivityBorderColor #C00000
+skinparam ActivityFontColor black
+skinparam ActivityBackgroundColor white
+skinparam ArrowColor #C00000
+
+title ACTIVITY DIAGRAM — Parent Bank Payment Upload
+
+|Parent|
+start
+:Login (phone + password);
+:View child fee balance;
+:Pay at school bank\n(NMB or CRDB);
+:Upload bank receipt PDF;
+if (Valid proof?) then (yes)
+  :System verifies amount\nand account;
+  if (Auto-approved?) then (yes)
+    :Create payment record;
+    :Update balance;
+    :Receive SMS/email confirmation;
+  else (review)
+    |School Admin|
+    :Review bank proof;
+    if (Approved?) then (yes)
+      :Create payment record;
+    else (no)
+      :Reject submission;
+    endif
+  endif
+else (no)
+  :Show error message;
+endif
+stop
+
+@enduml

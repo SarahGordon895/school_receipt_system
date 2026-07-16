@@ -1,0 +1,33 @@
+@startuml FTRS_Sequence_Simple
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam sequenceArrowThickness 1
+skinparam ParticipantBorderColor #C00000
+skinparam LifeLineBorderColor #C00000
+skinparam ArrowColor #C00000
+
+title SEQUENCE DIAGRAM — Record Payment & Notify Parent
+
+actor Admin
+participant System
+database Database
+participant "Notification\nService" as NS
+actor Parent
+
+Admin -> System : login()
+System -> Database : verify()
+Database --> System : success
+
+Admin -> System : enterPayment()
+System -> Database : savePayment()
+Database --> System : confirmed
+
+System -> Database : calcBalance()
+Database --> System : balance
+
+System -> NS : sendSMS()
+System -> NS : sendEmail()
+NS -> Parent : deliver
+
+@enduml

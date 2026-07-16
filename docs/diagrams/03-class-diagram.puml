@@ -1,0 +1,69 @@
+@startuml FTRS_Class_Simple
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam class {
+  BackgroundColor white
+  BorderColor #C00000
+  ArrowColor #C00000
+  FontColor black
+}
+
+title CLASS DIAGRAM\nMbonea Fee Tracking & Receipt System (FTRS)
+
+class Parent {
+  parent_id : int
+  phone : string
+  email : string
+  password : string
+}
+
+class Student {
+  student_id : int
+  admission_no : string
+  name : string
+  class_name : string
+  balance : decimal
+  parent_id : int
+}
+
+class FeeStructure {
+  fee_id : int
+  class_level : string
+  amount : decimal
+  due_date : date
+}
+
+class Payment {
+  payment_id : int
+  receipt_no : string
+  amount : decimal
+  payment_date : date
+  payment_mode : string
+  student_id : int
+}
+
+class User {
+  user_id : int
+  username : string
+  password : string
+  role : string
+}
+
+class Notification {
+  notification_id : int
+  message : string
+  channel : string
+  status : string
+  student_id : int
+}
+
+Parent "1" -- "0..*" Student : has >
+Student "0..*" -- "1" FeeStructure : assigned >
+Student "1" -- "0..*" Payment : receives >
+Student "1" -- "0..*" Notification : gets >
+User ..> Payment : records >
+User ..> Notification : sends >
+
+@enduml

@@ -1,0 +1,77 @@
+@startuml FTRS_ER_Simple
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam linetype ortho
+
+title ENTITY RELATIONSHIP DIAGRAM (ERD)\nMbonea Fee Tracking & Receipt System (FTRS)
+
+skinparam entity {
+  BackgroundColor white
+  BorderColor #C00000
+}
+
+entity "SUPER ADMIN" as super {
+  * **admin_id** <<PK>>
+  --
+  name
+  email
+  phone_no
+}
+
+entity "SCHOOL ADMIN" as school {
+  * **admin_id** <<PK>>
+  --
+  name
+  email
+  phone_no
+}
+
+entity "PARENT" as parent {
+  * **parent_id** <<PK>>
+  --
+  phone_number
+  email
+}
+
+entity "STUDENT" as student {
+  * **reg_no** <<PK>>
+  --
+  name
+  class_name
+  balance
+  parent_id <<FK>>
+}
+
+entity "PAYMENT" as payment {
+  * **payment_id** <<PK>>
+  --
+  reg_no <<FK>>
+  amount
+  amount_paid
+  status
+  due_date
+}
+
+entity "NOTIFICATION" as notif {
+  * **notification_id** <<PK>>
+  --
+  reg_no <<FK>>
+  message
+  channel
+  status
+}
+
+super ||--o{ school : manages
+school ||--o{ student : registers
+parent ||--o{ student : has
+parent ||--o{ payment : makes
+student ||--o{ payment : receives
+student ||--o{ notif : receives
+
+note bottom
+  **Legend:** PK = Primary Key | FK = Foreign Key
+  1 = One | N = Many
+end note
+
+@enduml

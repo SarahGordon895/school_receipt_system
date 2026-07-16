@@ -6,7 +6,7 @@ Laravel application for **Mbonea Secondary School** (UDSM IS098 project): track 
 
 - PHP 8.2+
 - Composer
-- MySQL/MariaDB (XAMPP)
+- MySQL 8+ (XAMPP MySQL on port 3306)
 - Node.js (optional, for Vite assets on auth pages)
 
 ## Quick install (Windows / XAMPP)
@@ -14,6 +14,9 @@ Laravel application for **Mbonea Secondary School** (UDSM IS098 project): track 
 1. Copy `.env.example` to `.env` and set database credentials:
 
 ```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
 DB_DATABASE=school_receipts
 DB_USERNAME=root
 DB_PASSWORD=

@@ -1,0 +1,56 @@
+@startuml FTRS_Use_Case_Simple
+skinparam shadowing false
+skinparam handwritten false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam linetype polyline
+skinparam nodesep 40
+skinparam ranksep 30
+skinparam usecase {
+  BackgroundColor white
+  BorderColor #C00000
+  FontColor black
+}
+skinparam actor {
+  BorderColor #C00000
+  FontColor black
+}
+
+title USE CASE DIAGRAM\nMbonea Fee Tracking & Receipt System (FTRS)
+
+left to right direction
+
+actor "School\nAdmin" as Admin
+actor "Parent" as Parent
+actor "Super\nAdmin" as Super
+
+rectangle "FTRS System" #white {
+  usecase "Register student" as UC1
+  usecase "Manage fee structures" as UC2
+  usecase "Record payment" as UC3
+  usecase "View fee balance" as UC4
+  usecase "Receive notification" as UC5
+  usecase "Generate reports" as UC6
+  usecase "Manage system settings" as UC7
+  usecase "Configure SMS/Email" as UC8
+}
+
+Admin --> UC1
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+Admin --> UC6
+
+Parent --> UC4
+Parent --> UC5
+
+Super --> UC1
+Super --> UC2
+Super --> UC3
+Super --> UC4
+Super --> UC5
+Super --> UC6
+Super --> UC7
+Super --> UC8
+
+@enduml

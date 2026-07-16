@@ -3,8 +3,8 @@
 **Fee Tracking & Receipt System (FTRS)** for Mbonea Secondary School  
 **UDSM IS098 Project**  
 **Repository:** https://github.com/SarahGordon895/school_receipt_system  
-**Generated:** June 2026  
-**Stack:** Laravel 12 · PHP 8.2+ · MariaDB · Bootstrap 5 · DomPDF · Maatwebsite Excel · iMart SMS API
+**Updated:** July 2026  
+**Stack:** Laravel 12 · PHP 8.2+ · **MySQL** · Bootstrap 5 · DomPDF · Maatwebsite Excel · iMart SMS API · Vite (optional guest assets)
 
 ---
 
@@ -22,14 +22,17 @@
 10. [Backend — Middleware, Requests, Support](#10-backend--middleware-requests-support)
 11. [Database — Complete Schema](#11-database--complete-schema)
 12. [Database — Seeders & Demo Data](#12-database--seeders--demo-data)
-13. [Frontend — Layouts & Design System](#13-frontend--layouts--design-system)
+13. [Frontend — Layouts, Design & Responsiveness](#13-frontend--layouts-design--responsiveness)
 14. [Frontend — Every Page & UI Action](#14-frontend--every-page--ui-action)
 15. [Parent Portal vs Admin Portal](#15-parent-portal-vs-admin-portal)
 16. [End-to-End Feature Flows](#16-end-to-end-feature-flows)
-17. [Configuration & Environment](#17-configuration--environment)
-18. [Tests Coverage](#18-tests-coverage)
-19. [File-by-File Inventory](#19-file-by-file-inventory)
-20. [Known Gaps & Technical Notes](#20-known-gaps--technical-notes)
+17. [Bursar Reports Suite](#17-bursar-reports-suite)
+18. [SMS & Email Notification Rules](#18-sms--email-notification-rules)
+19. [Configuration & Environment](#19-configuration--environment)
+20. [Tests Coverage](#20-tests-coverage)
+21. [File-by-File Inventory](#21-file-by-file-inventory)
+22. [UML Diagrams](#22-uml-diagrams)
+23. [Known Gaps & Technical Notes](#23-known-gaps--technical-notes)
 
 ---
 
@@ -39,34 +42,36 @@
 
 FTRS is a school fee management web application that lets **school administrators** and **super admins**:
 
-- Register and manage students with parent/guardian links
-- Define fee structures and payment categories
-- Generate numbered fee receipts (cash, bank, mobile money)
-- Run collection and unpaid-balance reports (HTML, Excel, PDF)
-- Send **SMS** and **email** fee reminders and payment confirmations via iMart SMS gateway and SMTP
+- Register and manage students with official parent/guardian links (`student_parent_links`)
+- Import students from Excel/CSV
+- Define fee structures and payment categories (**super admin**)
+- Generate numbered fee receipts (Cash, Bank, Mobile Money, Other)
+- Run a full **bursar report suite** (collection, fee position, receipt register, unpaid, paid/clearance, SMS/email history, bank proofs) with HTML + PDF/Excel export
+- Send **SMS** and **email** fee reminders (manual batch **1–5 parents**, or automated daily cron)
 - Manage notification logs (view, resend, mark delivered, refresh gateway status)
-- Configure school branding, receipt footer, and SMS settings
+- Review parent bank payment proof uploads (NMB/CRDB PDF)
+- Configure school branding, SMS templates, and bank accounts (**super admin**)
 
 **Parents** log in with **phone + password** and can:
 
-- View their children's fee balances and due dates
+- View **only their officially linked** children (fee balances, due dates)
 - See payment history (read-only)
 - Read notification messages and mark them as read
-- **Pay school fees via NMB/CRDB bank** — upload the bank receipt PDF for automatic verification
-- Download **clearance certificate** when a child is fully paid
+- **Pay via NMB/CRDB bank** — upload bank receipt PDF for automatic or bursar verification
+- Download a **clearance certificate** when a child is fully paid
 
 ### Architecture at a glance
 
 ```
-Browser (Bootstrap UI)
+Browser (Bootstrap 5 + school-theme.css, mobile-first)
     ↓ HTTP (routes/web.php, routes/auth.php)
-Middleware (auth, role, CSRF)
+Middleware (auth, role:*, CSRF)
     ↓
-Controllers (20 classes)
+Controllers (15 app + 9 Auth)
     ↓
-Services (SmsService, ParentReminderService, BankReceiptParser, BankPaymentVerificationService)
+Services (SMS, reminders, bank verify, reports, import, templates)
     ↓
-Models (Eloquent) ↔ MariaDB
+Models (Eloquent) ↔ MySQL (school_receipts)
     ↓
 External: iMart SMS API, SMTP mail, DomPDF, Excel export
 ```
@@ -75,17 +80,44 @@ External: iMart SMS API, SMTP mail, DomPDF, Excel export
 
 ## 2. How the System Runs
 
+### Requirements
+
+- PHP 8.2+ with extensions: `pdo_mysql`, `gd`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`, `fileinfo`
+- Composer
+- **MySQL 8+** (XAMPP MySQL on port 3306)
+- Node.js (optional — only for `npm run build` Vite assets on login/guest pages)
+
 ### Installation
 
 ```bash
 composer install
 cp .env.example .env
 php artisan key:generate
+# Start MySQL in XAMPP, then:
+# CREATE DATABASE school_receipts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 php artisan ftrs:install          # migrate + seed + storage:link
 php artisan serve --host=127.0.0.1 --port=8088
 ```
 
-Or via XAMPP: `http://localhost/1/school_receipt_system/public`
+Windows/XAMPP:
+
+```cmd
+C:\xampp\php\php.exe artisan ftrs:install
+C:\xampp\php\php.exe artisan serve
+```
+
+Or via XAMPP document root: `http://localhost/school_receipt_system/public`
+
+Helper script (macOS): `scripts/setup-mysql.sh`
+
+### Optional frontend build (guest/login Vite assets)
+
+```bash
+npm install
+npm run build   # creates public/build/manifest.json
+```
+
+If `manifest.json` is missing, login still works — guest layout skips `@vite` and uses Bootstrap + `school-theme.css` only.
 
 ### Scheduled tasks
 
@@ -93,22 +125,20 @@ Or via XAMPP: `http://localhost/1/school_receipt_system/public`
 |---------|----------|---------|
 | `fees:send-reminders` | Daily **06:00** | Automated SMS/email at **14, 7, 3, and 0 days** before due date + daily overdue notices |
 
-Requires `php artisan schedule:work` or system cron.
+Requires `php artisan schedule:work` or system cron pointing at `php artisan schedule:run`.
 
 ### Demo accounts (after seed)
 
-| Role | Login | Password |
-|------|-------|----------|
-| Super Admin | `sarahgeorge7224@gmail.com` | `Super@FTRS2025` |
-| School Admin | `admin@mbonea.sc.tz` | `Mbonea@Admin2025` |
-| Parent (Mkumbo) | Phone `+255655139724` | `Mkumbo@2025` |
-| Parent (Gordon) | Phone `+255655139724` | `Gordon@2025` |
-| Parent (Chaula) | Phone `+255773255214` | `Chaula@2025` |
-| Other demo parents | Each student's unique `+255620…` phone | `Parent@2025` |
+| Role | Login | Password | Login tab |
+|------|-------|----------|-----------|
+| Super Admin | `sarahgeorge7224@gmail.com` | `Super@FTRS2025` | Super Admin |
+| School Admin | `admin@mbonea.sc.tz` | `Mbonea@Admin2025` | School Admin |
+| Parent (Mkumbo) | Phone `+255655139724` | `Mkumbo@2025` | Parent |
+| Parent (Gordon) | Phone `+255755666899` | `Gordon@2025` | Parent |
+| Parent (Chaula) | Phone `+255718216434` | `Chaula@2025` | Parent |
+| Other demo parents | Showcase phones from seeder | `Parent@2025` | Parent |
 
-After seed: **~106 students**, **~101 parent accounts** across Forms I–IV (some siblings share a parent).
-
-Parents choose role tab **Parent** on login; admins use **School Admin** or **Super Admin** tab with email.
+After seed: large demo school across Forms I–IV (students, parents, receipts, notifications). Showcase contacts use **real phone numbers and Gmail addresses** cycling across the population (not `@mbonea.demo.tz` / fake `+255620…`).
 
 ---
 
@@ -117,37 +147,37 @@ Parents choose role tab **Parent** on login; admins use **School Admin** or **Su
 ```
 school_receipt_system/
 ├── app/
-│   ├── Console/Commands/     # Artisan CLI commands (3)
-│   ├── Exports/              # Excel export class
+│   ├── Console/Commands/       # ftrs:install, fees:send-reminders, ftrs:sync-parent-phones
+│   ├── Data/                   # BankReceiptData DTO
+│   ├── Exports/                # FeeCollectionReportExport, ReceiptsReportExport
 │   ├── Http/
-│   │   ├── Controllers/      # 11 main + 9 Auth controllers
-│   │   ├── Middleware/       # EnsureRole
-│   │   └── Requests/         # LoginRequest, ProfileUpdateRequest
-│   ├── Imports/              # Student CSV/Excel import
-│   ├── Mail/                 # FeeReminderMailable
-│   ├── Models/               # 9 Eloquent models
-│   ├── Notifications/        # Payment + Fee reminder notifications
-│   ├── Providers/            # AppServiceProvider
-│   ├── Services/             # SMS, reminders, payment notifier
-│   ├── Support/              # ParentStudentAdmission
-│   └── View/Components/      # AppLayout, GuestLayout PHP classes
-├── bootstrap/app.php         # App bootstrap, middleware, exceptions
-├── config/                   # Laravel + services.php (SMS)
+│   │   ├── Controllers/        # 15 app + Auth/*
+│   │   ├── Middleware/         # EnsureRole
+│   │   └── Requests/           # LoginRequest, BatchParentReminderRequest, ProfileUpdateRequest
+│   ├── Imports/                # StudentsImport
+│   ├── Mail/                   # FeeReminderMailable
+│   ├── Models/                 # 10 Eloquent models
+│   ├── Notifications/          # PaymentReceivedNotification, FeeReminderNotification
+│   ├── Providers/              # AppServiceProvider
+│   ├── Services/               # 14 service classes
+│   ├── Support/                # ParentStudentAdmission, helpers.php
+│   └── View/Components/
+├── bootstrap/app.php
+├── config/                     # includes notifications.php (batch 1–5), services.php (SMS)
 ├── database/
-│   ├── migrations/           # 28 migration files
-│   ├── seeders/              # Database, Setting, DemoData
-│   └── factories/            # UserFactory
-├── docs/                     # This documentation
+│   ├── migrations/             # 33 migration files
+│   ├── seeders/                # Database, Setting, DemoData
+│   └── factories/
+├── docs/                       # This documentation + diagrams/
 ├── public/
-│   ├── css/school-theme.css  # Main UI theme (~875 lines)
+│   ├── css/school-theme.css    # Responsive school theme
 │   ├── css/bootstrap.min.css
-│   └── icons/                # Bootstrap Icons
-├── resources/views/          # 67 Blade templates
-├── routes/web.php            # Main application routes
-├── routes/auth.php           # Authentication routes
-├── routes/console.php        # Schedule + inspire command
-├── storage/                  # Logs, cache, compiled views
-└── tests/                    # 18 test files (~55 tests)
+│   └── icons/
+├── resources/views/            # ~85 Blade templates
+├── routes/web.php, auth.php, console.php
+├── scripts/setup-mysql.sh
+├── tests/                      # ~26 Feature/Unit test files
+└── storage/
 ```
 
 ---
@@ -158,22 +188,34 @@ school_receipt_system/
 
 | Role | Who | Home route | Access |
 |------|-----|------------|--------|
-| `school_admin` | **School staff** (Mbonea admin) | `/dashboard` | **All school operations:** receipts, students (import/delete), reports, notifications, bank payment review |
-| `super_admin` | **Developer** (system owner) | `/settings` | **System setup only:** school branding, SMS templates, bank accounts, fee structures, payment categories |
-| `parent` | Guardian | `/parent/dashboard` | Own linked children only |
+| `school_admin` | School bursar/staff | `/dashboard` | All **school operations**: receipts, students, import, reports, messages, notification logs, bank proof review |
+| `super_admin` | System owner | `/dashboard` | **School operations + system setup**: fee structures, payment categories, Admin Settings (branding, SMS templates, bank accounts) |
+| `parent` | Guardian | `/parent/dashboard` | Own linked children only (via `student_parent_links`) |
 
-### Authorization mechanism
+> **Important:** Super Admin is **not** “settings only”. Code places `role:school_admin,super_admin` on all school-ops routes. `User::canManageSchool()` returns true for both. Sidebar shows school ops **and** system setup for super admin.
 
-- **No Laravel Policies** — authorization uses:
-  1. `EnsureRole` middleware (`app/Http/Middleware/EnsureRole.php`)
-  2. Custom route binding in `AppServiceProvider` — parents get 403 on other students
-  3. Inline checks in `ParentDashboardController`- According to student id registered through parents phone number
+### Role access matrix
 
-### Login (`app/Http/Requests/Auth/LoginRequest.php`)
+| Capability | Parent | School Admin | Super Admin |
+|------------|--------|--------------|-------------|
+| Login | Phone + password | Email + password | Email + password |
+| Profile | Yes | Yes | Yes |
+| Parent portal (children, notifs, bank upload, clearance) | Yes | No | No |
+| Receipts / Students / Import / Reports / Messages / Bank review / Notification logs | No | Yes | Yes |
+| Fee structures / Payment categories / Settings | No | No | Yes |
 
-- **Parents:** phone + password (supports multiple accounts sharing one phone; password disambiguates)
-- **Admins:** email + password filtered by `login_type` hidden field
-- Rate limit: 5 attempts per phone/email + IP
+### Authorization mechanisms
+
+1. `EnsureRole` middleware (`role:parent`, `role:school_admin,super_admin`, `role:super_admin`)
+2. Custom route binding in `AppServiceProvider` for `{student}` and `{log}` — parents get **403** on foreign records
+3. `Student::scopeForParent` / `belongsToParent` / `ParentStudentAdmission::parentOwnsStudent()`
+4. Controllers call `$request->user()->canManageSchool()` where needed (e.g. batch reminder FormRequest)
+
+### Login (`LoginRequest`)
+
+- **Parents:** phone + password; multiple portal accounts may share one phone — password disambiguates
+- **Admins:** email + password filtered by `login_type` (school_admin / super_admin)
+- Rate limit: **5 attempts** per phone/email + IP
 
 ---
 
@@ -183,7 +225,8 @@ school_receipt_system/
 
 | Method | Path | Name | Handler |
 |--------|------|------|---------|
-| GET | `/` | — | Redirect to login or home |
+| GET | `/` | — | Redirect to user home or login |
+| GET | `/up` | — | Health check (`bootstrap/app.php`) |
 
 ### Auth (`routes/auth.php`)
 
@@ -202,34 +245,38 @@ school_receipt_system/
 
 ### Authenticated — all roles
 
-| Method | Path | Name | Controller |
-|--------|------|------|------------|
-| GET | `/profile` | `profile.edit` | ProfileController@edit |
-| PATCH | `/profile` | `profile.update` | ProfileController@update |
-| DELETE | `/profile` | `profile.destroy` | ProfileController@destroy |
+| Method | Path | Name |
+|--------|------|------|
+| GET/PATCH/DELETE | `/profile` | `profile.edit/update/destroy` |
 
-### Admin (`role:super_admin,school_admin`)
+### School ops (`auth` + `role:school_admin,super_admin`)
 
-| Area | Resource routes | Extra routes |
-|------|-----------------|--------------|
-| Dashboard | GET `/dashboard` | — |
-| Receipts | CRUD `/receipts` | GET `/receipts/partial`, GET `/receipts/{id}/pdf` |
-| Students | CRUD `/students` (no show) | import, search API, send-reminder, **clearance certificate** |
-| Reports | GET `/reports`, `/reports/unpaid`, **`/reports/clearance`** | generate, export excel/pdf, send-reminders, **clearance PDF** |
-| Notification logs | CRUD `/notification-logs` | resend, refresh-status, mark-delivered, send |
-| **Bank payments** | GET `/bank-payments` | show, download PDF, approve, reject |
+| Area | Routes |
+|------|--------|
+| Dashboard | GET `/dashboard` |
+| Receipts | resource `index,create,store,show,edit,update,destroy`; `GET /receipts/partial`; `GET /receipts/{receipt}/pdf` |
+| Students | resource except show; `GET/POST /students/import`; `GET /students/import/result`; `GET /students/{student}/clearance-certificate`; `GET /api/students`; `POST /students/{student}/send-reminder` |
+| Messages | GET `/messages` — SMS/email centre |
+| Reports hub | GET `/reports` |
+| Fee position | GET `/reports/fee-position`, `/reports/fee-position/pdf` |
+| Receipt register | GET/POST `/reports/receipts`, POST `/reports/receipts/pdf` |
+| Unpaid | GET `/reports/unpaid`, `/reports/unpaid/pdf`; POST `/reports/unpaid/send-reminders` |
+| Paid / clearance | GET `/reports/paid` (redirect → clearance); GET `/reports/clearance`, `/reports/clearance/pdf` |
+| Message history report | GET/POST `/reports/messages`, POST `/reports/messages/pdf` |
+| Bank proof report | GET/POST `/reports/bank-proofs`, POST `/reports/bank-proofs/pdf` |
+| Collection report | POST `/reports/generate`, `/reports/export/excel`, `/reports/export/pdf` |
+| Notification logs | resource CRUD; `GET/POST /notification-logs/send`; resend, refresh-status, mark-delivered |
+| Bank payments (bursar) | GET index/show; download; POST approve/reject |
 
-### Super admin only (`role:super_admin`)
+### Super admin only (`auth` + `role:super_admin`)
 
-| Area | Resource routes | Extra routes |
-|------|-----------------|--------------|
-| Fee structures | CRUD `/fee-structures` | — |
-| Payment categories | CRUD `/payment-categories` | — |
-| Admin Settings | GET/PUT `/settings` | School info, SMS templates, **NMB/CRDB bank accounts** |
-| Students | DELETE `/students/{id}` | import form |
-| Receipts | DELETE `/receipts/{id}` | — |
+| Area | Routes |
+|------|--------|
+| Fee structures | resource except show |
+| Payment categories | resource except show |
+| Settings | GET `/settings`, PUT `/settings` |
 
-### Parent (`role:parent`)
+### Parent (`auth` + `role:parent`)
 
 | Method | Path | Name |
 |--------|------|------|
@@ -246,120 +293,33 @@ school_receipt_system/
 
 ## 6. Backend — Controllers
 
-### `DashboardController.php` (invokable)
-**File:** `app/Http/Controllers/DashboardController.php`  
-**View:** `resources/views/dashboard.blade.php`
+### School / bursar controllers
 
-Calculates and displays:
-- Total collected, today, this month
-- Outstanding balance across students
-- Overdue student count
-- Payment mode breakdown (current month)
-- Recent 8 receipts
-- Top 5 classes by collection
-- Category totals via receipt pivot
+| Controller | Key methods |
+|------------|-------------|
+| `DashboardController` | `__invoke` — KPIs, modes, recent receipts, top classes |
+| `ReceiptController` | CRUD, `partial`, `pdf`; on store → `ParentPaymentNotifier` |
+| `StudentController` | CRUD, `search`, `importForm/Store/Result`; links guardian via `ParentStudentAdmission` |
+| `ReportController` | Full bursar suite (see §17), `sendReminders` via `BatchParentReminderRequest` |
+| `MessageController` | `index` — Message Centre (templates legend, stats, automation) |
+| `NotificationLogController` | CRUD, `sendCreate`/`sendStore` (batch 1–5), `sendToStudent`, `resend`, `refreshStatus`, `markDelivered` |
+| `BankPaymentSubmissionController` | `index`, `show`, `approve`, `reject`, `download` |
+| `ClearanceCertificateController` | DomPDF when student fully paid |
+| `FeeStructureController` | CRUD (super admin) |
+| `PaymentCategoryController` | CRUD (super admin) |
+| `SettingController` | `edit`/`update` branding, SMS, bank accounts, optional test SMS |
+| `ProfileController` | `edit`/`update`/`destroy` |
 
----
+### Parent controllers
 
-### `ReceiptController.php`
-**File:** `app/Http/Controllers/ReceiptController.php`
+| Controller | Key methods |
+|------------|-------------|
+| `ParentDashboardController` | Dashboard, student history, notifications inbox, mark read |
+| `ParentBankPaymentController` | List/upload bank receipt PDF |
 
-| Method | What it does | View/Response |
-|--------|--------------|---------------|
-| `index` | Paginated receipt list with filters (search, class, date, category) | `receipts.index` |
-| `create` | New receipt form with students, categories | `receipts.create` |
-| `store` | Validates, creates receipt, syncs category amounts, calls `ParentPaymentNotifier` (SMS+email), redirects to show with print flag | redirect |
-| `show` | Receipt detail + thermal print layout | `receipts.show` |
-| `edit` / `update` | Edit receipt and categories | `receipts.edit` |
-| `destroy` | Delete receipt | redirect back |
-| `partial` | AJAX HTML table fragment | `receipts.partials.table` |
-| `pdf` | DomPDF download of single receipt | PDF file |
+### Auth controllers (9)
 
-**Receipt numbering** (`Receipt` model boot): `RCPT-{year}-T{n}-{seq}` using `receipt_counters` table with row lock.
-
----
-
-### `StudentController.php`
-**File:** `app/Http/Controllers/StudentController.php`
-
-| Method | What it does |
-|--------|--------------|
-| `index` | Student list with search, balance (`withSum receipts`) |
-| `create` / `store` | Admit student, link guardian via `ParentStudentAdmission`, sync fee structures |
-| `edit` / `update` | Update student; separate notification email vs portal login email |
-| `destroy` | Delete student |
-| `search` | JSON autocomplete for receipt form (`api.students.search`) |
-| `importForm` / `importStore` | Excel/CSV bulk import |
-
-**Key fields:** admission_no, name, class_name, parent contacts, fee_due_date, expected_total_fee, fee structure links.
-
----
-
-### `NotificationLogController.php`
-**File:** `app/Http/Controllers/NotificationLogController.php`  
-**Services injected:** `ParentReminderService`, `SmsService`
-
-| Method | What it does |
-|--------|--------------|
-| `index` | Filterable log list + status stat cards (delivered/failed/skipped) |
-| `create` / `store` | Manual log entry (admin records a phone call, etc.) |
-| `show` / `edit` / `update` / `destroy` | CRUD on log rows |
-| `sendCreate` / `sendStore` | Manual SMS/email fee reminder to one student |
-| `sendToStudent` | Quick reminder from students list or unpaid report |
-| `resend` | Retry failed/skipped log — updates same row |
-| `refreshStatus` | Poll iMart gateway for delivery confirmation |
-| `markDelivered` | Admin confirms parent received message |
-
----
-
-### `ReportController.php`
-**File:** `app/Http/Controllers/ReportController.php`
-
-| Method | What it does |
-|--------|--------------|
-| `index` | Report filter form |
-| `generate` | Filtered paid receipts + summary stats |
-| `exportExcel` | Maatwebsite Excel via `ReceiptsReportExport` |
-| `exportPdf` | DomPDF report download |
-| `unpaid` | Students with balance > 0, overdue flags |
-| `sendReminders` | Runs `Artisan fees:send-reminders` |
-
----
-
-### `SettingController.php`
-**File:** `app/Http/Controllers/SettingController.php`
-
-| Method | What it does |
-|--------|--------------|
-| `edit` | School info + SMS settings form |
-| `update` | Save settings, logo upload/remove, optional test SMS |
-
----
-
-### `ParentDashboardController.php`
-**File:** `app/Http/Controllers/ParentDashboardController.php`
-
-| Method | What it does | View |
-|--------|--------------|------|
-| `__invoke` | Portfolio: linked students, balances, due dates | `parents.dashboard` |
-| `showStudent` | Payment history for one child (403 if not linked) | `parents.student-history` |
-| `notifications` | Filterable inbox of notification logs | `parents.notifications` |
-| `markNotificationRead` | Sets `read_at` on one log | redirect |
-| `markAllNotificationsRead` | Bulk mark unread | redirect |
-
----
-
-### Other admin controllers
-
-| Controller | File | Views |
-|------------|------|-------|
-| `FeeStructureController` | `app/Http/Controllers/FeeStructureController.php` | `fee-structures/*` |
-| `PaymentCategoryController` | `app/Http/Controllers/PaymentCategoryController.php` | `payment_categories/*` |
-| `ProfileController` | `app/Http/Controllers/ProfileController.php` | `profile.edit` |
-
-### Auth controllers (9 files in `app/Http/Controllers/Auth/`)
-
-Standard Laravel Breeze: login, register, password reset, email verification, confirm password.
+Breeze: `AuthenticatedSessionController`, `RegisteredUserController`, password reset/confirm/update, email verification.
 
 ---
 
@@ -367,183 +327,93 @@ Standard Laravel Breeze: login, register, password reset, email verification, co
 
 ### `User` — `app/Models/User.php`
 
-| Field | Purpose |
-|-------|---------|
-| name, email, phone, password, role | Core identity |
-| `home_route` accessor | `parent.dashboard` or `dashboard` |
-| `login_identifier` accessor | Phone or email for navbar display |
-| `hasRole()`, `isParent()` | Role checks |
-| `parentStudents()` | BelongsToMany Student via `student_parent_links` |
-
----
+| Item | Detail |
+|------|--------|
+| Fields | name, email (unique), phone (nullable, **not unique**), password, role |
+| Role helpers | `hasRole()`, `isParent()`, `isSchoolAdmin()`, `isSuperAdmin()`, **`canManageSchool()`** |
+| Accessors | `normalized_role`, `home_route` (parent → parent.dashboard; else dashboard), `login_identifier` |
+| Static | `normalizePhone()` — TZ formats to +255… |
+| Relations | `parentStudents()` via `student_parent_links`; `admittedStudents()` |
 
 ### `Student` — `app/Models/Student.php`
 
-| Field | Purpose |
-|-------|---------|
-| admission_no | Unique school ID |
-| name, class_name | Identity |
-| parent_name, parent_phone, parent_email | Notification contacts |
-| parent_user_id | Linked portal account |
-| fee_due_date, expected_total_fee | Fee tracking |
-| admitted_at, registered_by_user_id | Audit |
-
-**Computed accessors:**
-- `paid_amount` — sum of receipt amounts
-- `expected_amount` — fee structures sum OR `expected_total_fee`
-- `balance` — max(0, expected - paid)
-
-**Methods:**
-- `resolveParentPhone()` — cascade: student phone → link phone → user phone
-- `resolveParentEmail()` — student email → user email
-- `hasParentContact()` — phone or email present
-
-**Relationships:** parentUser, guardians, receipts, feeStructures, notificationLogs, parentLinks
-
----
+| Item | Detail |
+|------|--------|
+| Fields | admission_no, name, class_name, parent_*, parent_user_id, fee_due_date, expected_total_fee, admitted_at, registered_by_user_id |
+| Accessors | `paid_amount`, `expected_amount` (fee structures sum OR fallback), `balance` |
+| Methods | `isFullyPaid()`, `hasOutstandingBalance()`, `resolveParentPhone()`, `resolveParentEmail()`, `hasParentContact()`, `belongsToParent()`, `scopeForParent` |
+| Relations | parentUser, registeredBy, parentLinks, primaryParentLink, guardians, receipts, feeStructures, notificationLogs |
 
 ### `Receipt` — `app/Models/Receipt.php`
 
-| Field | Purpose |
-|-------|---------|
-| receipt_no | Auto-generated scoped number |
-| student_id, student_name, class_name | Student link + print snapshot |
-| amount, payment_date, payment_mode | Payment data |
-| reference, note | Optional metadata |
-| user_id | Cashier who created receipt |
-
-**Relationships:** paymentCategories (pivot with per-category amount), user
-
----
+| Item | Detail |
+|------|--------|
+| Fields | receipt_no, student_id, snapshots, amount, payment_date (**cast as date**), payment_mode, reference, note, user_id |
+| Boot | Auto `receipt_no` via `ReceiptCounter` (`RCPT-{year}-T{n}-{seq}`) |
+| Methods | `syncPaymentCategories()`, `generateScopedNo()` |
+| Relations | **`student()`**, `user()`, `paymentCategories()` pivot with amount |
 
 ### `NotificationLog` — `app/Models/NotificationLog.php`
 
-| Field | Purpose |
-|-------|---------|
-| student_id, channel, status, sent_on, message | Core log |
-| gateway_uid, delivery_status | SMS gateway tracking |
-| read_at | Parent read timestamp |
+| Item | Detail |
+|------|--------|
+| Fields | student_id, channel (`sms`/`email`), **event_type**, status, sent_on, message, gateway_uid, delivery_status, read_at |
+| Statuses | sent, failed, skipped |
+| Methods | `isResolvableFailure()`, `statusLabel()`, `statusBadge()` |
 
-**Statuses:** `sent`, `failed`, `skipped`  
-**Channels:** `sms`, `email`  
-**Methods:** `isResolvableFailure()`, `statusLabel()`, `statusBadge()`
+### `BankPaymentSubmission` — `app/Models/BankPaymentSubmission.php`
 
----
+| Item | Detail |
+|------|--------|
+| Fields | parent_user_id, student_id, file paths, bank (`nmb`/`crdb`), extracted_*, status, verification_message, receipt_id, reviewed_by_user_id, reviewed_at |
+| Statuses | pending, verified, review, rejected |
+| Relations | parentUser, student, receipt, reviewedBy |
+| Helpers | `statusLabel()`, `statusBadge()`, `bankLabel()` |
 
 ### Other models
 
-| Model | File | Table | Purpose |
-|-------|------|-------|---------|
-| `Setting` | `app/Models/Setting.php` | settings | School branding + SMS config singleton |
-| `FeeStructure` | `app/Models/FeeStructure.php` | fee_structures | Class fee templates |
-| `PaymentCategory` | `app/Models/PaymentCategory.php` | payment_categories | Tuition, transport, etc. |
-| `ReceiptCounter` | `app/Models/ReceiptCounter.php` | receipt_counters | Atomic receipt sequence |
-| `StudentParentLink` | `app/Models/StudentParentLink.php` | student_parent_links | Many-to-many parent↔student |
+| Model | Purpose |
+|-------|---------|
+| `Setting` | Singleton school config; `current()` caches as `app_setting`; `forgetCache()`; `smsConfig()` |
+| `FeeStructure` | Class fee templates → M2M students |
+| `PaymentCategory` | Tuition/transport etc. |
+| `ReceiptCounter` | Atomic year/term sequence |
+| `StudentParentLink` | Official parent↔student link (relationship, is_primary, phones) |
+
+### DTO
+
+| Class | Purpose |
+|-------|---------|
+| `App\Data\BankReceiptData` | Parsed bank PDF fields |
 
 ---
 
 ## 8. Backend — Services
 
-### `SmsService` — `app/Services/SmsService.php` (264 lines)
+| Service | Purpose |
+|---------|---------|
+| `SmsService` | Send via iMart; simulate/disabled/failed paths; `checkDelivery`; normalize phone to 255… |
+| `SmsSendResult` | Result DTO |
+| `ParentReminderService` | `runAutomatedReminders`, `notifyPayment`, `notifyAdmission`, `sendFeeReminder`, **`sendBatchToStudents` (1–5)**, `resendLog`, `summarizeSendResults` |
+| `ParentPaymentNotifier` | Thin wrapper → `notifyPayment` after receipt create |
+| `NotificationTemplateService` | Event types + placeholders (`{student_name}`, `{balance}`, `{due_date}`, etc.); `manualSendEventTypes()`; resolve milestone from student |
+| `BankReceiptParser` | Parse NMB/CRDB PDF text (smalot/pdfparser) |
+| `BankPaymentVerificationService` | Validate amount/account/ref/date; auto-create receipt or queue for review |
+| `StudentImportService` | Excel/CSV row import orchestration |
+| `FeeCollectionReportService` | Period collection report + date presets |
+| `SchoolFeePositionReportService` | Expected / paid / balance / status grid |
+| `ReceiptRegisterReportService` | Official receipt register |
+| `TermClearanceReportService` | Fully paid students + `clearanceReference()` |
+| `MessageHistoryReportService` | SMS/email history from `notification_logs` |
+| `BankPaymentReportService` | Bank proof submissions report |
 
-**Purpose:** Send SMS via iMart HTTP API.
+### SMS send decision tree (`SmsService::send`)
 
-| Method | Lines (approx) | Behavior |
-|--------|----------------|----------|
-| `send($to, $message)` | 11–105 | Full send pipeline |
-| `checkDelivery($uid)` | 107–136 | Poll gateway status |
-| `deliveryIndicatesSuccess()` | 138–152 | Interpret carrier response |
-| `normalizeRecipient()` | 170–187 | `0xxx` → `255xxx` |
-| `resolveConfig()` | 190–228 | DB settings → .env fallback |
-| `buildPayload()` | 154–168 | iMart vs generic JSON shape |
-| `fetchDeliveryStatus()` | 188+ | GET `{endpoint}/{uid}` |
-
-**Decision tree in `send()`:**
-1. SMS disabled in settings → `skipped`
-2. Simulate mode ON → log only, `skipped`
-3. No API endpoint/token → `failed`
-4. HTTP POST to iMart → if API accepts → `sent` (even if carrier later reports delay)
-5. Stores `gateway_uid` and `delivery_status` in result
-
----
-
-### `ParentReminderService` — `app/Services/ParentReminderService.php`
-
-**Purpose:** Central orchestration for all parent notifications.
-
-| Method | Purpose |
-|--------|---------|
-| `sendScheduledReminders($days)` | **Deprecated wrapper** — use `runAutomatedReminders()` |
-| `runAutomatedReminders()` | Daily cron: exact milestones at 14/7/3/0 days + overdue; dedup via `event_type` |
-| `notifyPayment($receipt)` | Payment confirmation email + SMS on new receipt |
-| `notifyAdmission($student)` | Admission SMS/email when student registered |
-| `sendFeeReminder($student, ...)` | Manual or scheduled fee reminder with template |
-| `resendLog($log)` | Retry failed log, update same row |
-
-**Templates:** `NotificationTemplateService` — placeholders `{student_name}`, `{amount}`, `{balance}`, `{due_date}`, etc. Configured in Admin Settings.
-
-**Email:** `FeeReminderMailable` uses same template text as SMS  
-**Logging:** Every action writes to `notification_logs` with `event_type` for milestone dedup
-
----
-
-### `SmsSendResult` — `app/Services/SmsSendResult.php`
-
-Readonly DTO: `status`, `detail`, `recipient`, `gatewayUid`, `deliveryStatus`  
-Factories: `sent()`, `failed()`, `skipped()`  
-Helpers: `succeeded()`, `delivered()`
-
----
-
-### `ParentPaymentNotifier` — `app/Services/ParentPaymentNotifier.php`
-
-Thin wrapper — delegates to `ParentReminderService::notifyPayment()`.  
-Called from `ReceiptController@store` and auto-verified bank payments.
-
----
-
-### `BankReceiptParser` — `app/Services/BankReceiptParser.php`
-
-Extracts payment data from **NMB** and **CRDB** bank receipt PDFs (via `smalot/pdfparser`):
-
-| Field | Detection |
-|-------|-----------|
-| Bank | NMB / CRDB keywords |
-| Amount | TZS/TSH patterns (Tanzania `DD/MM/YYYY` dates) |
-| Reference | Transaction ref / receipt no |
-| Account | Beneficiary / credit account number |
-| Date | Payment / value date |
-
----
-
-### `BankPaymentVerificationService` — `app/Services/BankPaymentVerificationService.php`
-
-Validates parsed receipt against school settings and student balance:
-
-1. Beneficiary account matches school's NMB or CRDB account (Admin Settings)
-2. Amount &gt; 0 and ≤ outstanding balance for **selected student**
-3. Reference not already used
-4. Payment date valid (not future, within 120 days)
-
-**Outcomes:** `verified` (auto-creates `Receipt` + notifies parent), `review` (bursar approves), `rejected`
-
----
-
-### `FeeCollectionReportService` / `TermClearanceReportService`
-
-- **Fee collection report:** students sorted lowest→highest paid; whole TZS amounts
-- **Term clearance report:** fully paid students for bursar; PDF export
-
----
-
-### `ParentStudentAdmission` — `app/Support/ParentStudentAdmission.php`
-
-| Method | Purpose |
-|--------|---------|
-| `linkGuardian()` | Create/update `student_parent_links`, set primary |
-| `syncStudentPrimaryGuardian()` | Sync `parent_user_id`, phone (NOT notification email) |
-| `updateParentPortalEmail()` | Update parent user login email |
-| `parentOwnsStudent()` | Authorization check |
+1. SMS disabled in settings → `skipped`  
+2. Simulate ON → log only → `skipped`  
+3. Missing API config → `failed`  
+4. HTTP POST to iMart → API accept → `sent` (optional delivery poll)  
+5. Result → caller writes `notification_logs`
 
 ---
 
@@ -551,375 +421,243 @@ Validates parsed receipt against school settings and student balance:
 
 ### Artisan commands
 
-| Command | File | What it does |
-|---------|------|--------------|
-| `ftrs:install {--fresh}` | `app/Console/Commands/InstallFtrs.php` | Migrate, seed, storage:link, print demo logins |
-| `fees:send-reminders {--days=3}` | `app/Console/Commands/SendFeeReminders.php` | Run scheduled reminders |
-| `ftrs:sync-parent-phones` | `app/Console/Commands/SyncParentPhones.php` | Re-seed demo data, print phones |
+| Command | Purpose |
+|---------|---------|
+| `ftrs:install {--fresh}` | Migrate (+fresh), seed, storage:link, print demo logins |
+| `fees:send-reminders {--milestone=}` | Run automated milestone + overdue reminders |
+| `ftrs:sync-parent-phones` | Sync demo parent phones / contacts |
 
-### Mail
+### Mail & Laravel notifications
 
-| Class | File | Used when |
-|-------|------|-----------|
-| `FeeReminderMailable` | `app/Mail/FeeReminderMailable.php` | Fee reminder emails |
-| View | `resources/views/emails/fee-reminder.blade.php` | Email body template |
-
-### Notifications
-
-| Class | File | Status |
-|-------|------|--------|
-| `PaymentReceivedNotification` | `app/Notifications/PaymentReceivedNotification.php` | **Active** — payment emails |
-| `FeeReminderNotification` | `app/Notifications/FeeReminderNotification.php` | **Unused** — replaced by Mailable |
+| Class | Status |
+|-------|--------|
+| `FeeReminderMailable` | **Active** — fee reminder emails |
+| `PaymentReceivedNotification` | **Active** — payment confirmation emails |
+| `FeeReminderNotification` | Unused legacy (replaced by Mailable) |
 
 ### Exports / Imports
 
-| Class | File | Purpose |
-|-------|------|---------|
-| `ReceiptsReportExport` | `app/Exports/ReceiptsReportExport.php` | Excel report |
-| `StudentsImport` | `app/Imports/StudentsImport.php` | Bulk student import |
+| Class | Purpose |
+|-------|---------|
+| `FeeCollectionReportExport` | Excel collection report |
+| `ReceiptsReportExport` | Excel receipts report |
+| `StudentsImport` | Maatwebsite ToArray helper for import |
 
 ---
 
 ## 10. Backend — Middleware, Requests, Support
 
-### `EnsureRole` — `app/Http/Middleware/EnsureRole.php`
+### `EnsureRole`
 
-- Checks authenticated user has one of allowed roles
-- Parent accessing admin route → redirect to `parent.dashboard`
-- Admin accessing parent route → redirect to `dashboard`
-- Otherwise → 403
+- Auth required + one of allowed roles  
+- Wrong portal: parent → `parent.dashboard`; school manager → `dashboard`  
+- Else 403  
 
-### `LoginRequest` — `app/Http/Requests/Auth/LoginRequest.php`
+### Form requests
 
-- Validates `login_type`, password, phone OR email
-- `authenticate()`: multi-candidate phone login for parents
-- Rate limiting with lockout event
+| Request | Rules |
+|---------|-------|
+| `LoginRequest` | Role-specific auth + rate limit |
+| **`BatchParentReminderRequest`** | `student_ids` **min 1 / max 5**; message_type; at least one of SMS/email; authorize via `canManageSchool()` |
+| `ProfileUpdateRequest` | Name/email unique |
 
-### `AppServiceProvider` — `app/Providers/AppServiceProvider.php`
+### `AppServiceProvider`
 
-| Boot logic | Purpose |
-|------------|---------|
-| `Schema::defaultStringLength(191)` | MySQL compatibility |
-| Bootstrap 5 pagination | UI consistency |
-| Custom `{student}` binding | Parents can only access own children |
-| View composer | Injects `$appSetting`, `$parentUnreadNotifications` globally |
+- `Schema::defaultStringLength(191)`  
+- Bootstrap 5 pagination  
+- Custom `{student}` / `{log}` bindings for parent scope  
+- View composer: `$appSetting`, `$parentUnreadNotifications`  
 
-### Exception handling — `bootstrap/app.php`
+### `bootstrap/app.php`
 
-Missing `NotificationLog` → redirect to index with yellow warning (not 404 page).
+- Alias `role` → `EnsureRole`  
+- Health `/up`  
+- Missing `NotificationLog` → friendly redirect (not raw 404)  
+
+### Support helpers
+
+| File | Purpose |
+|------|---------|
+| `ParentStudentAdmission` | linkGuardian, sync primary, parentOwnsStudent, portal email update |
+| `app/Support/helpers.php` | `format_tzs()` and shared helpers |
 
 ---
 
 ## 11. Database — Complete Schema
 
-### Application tables (20 domain + 7 Laravel infra)
+**Default connection:** MySQL, database `school_receipts`, charset `utf8mb4`.
+
+### Domain tables
 
 #### `users`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | PK | |
-| name, email (unique), password | | |
-| phone | string(32) nullable | NOT unique (shared phones) |
-| role | string | super_admin, school_admin, parent |
-| email_verified_at, remember_token | | |
+id, name, email (unique), phone (nullable, **not unique**), password, role (`super_admin`|`school_admin`|`parent`), email_verified_at, remember_token, timestamps
 
 #### `students`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | PK | |
-| admission_no | unique nullable | |
-| name | indexed | |
-| class_name | nullable | Free text (not FK to classes table) |
-| parent_name, parent_phone, parent_email | nullable | Notification contacts |
-| parent_user_id | FK → users | Portal account |
-| fee_due_date | date nullable | |
-| expected_total_fee | unsigned bigint default 0 | Fallback if no fee structures |
-| admitted_at, registered_by_user_id | nullable | Audit |
+id, admission_no (unique), name, class_name, parent_name/phone/email, parent_user_id (FK), fee_due_date, expected_total_fee, admitted_at, registered_by_user_id (FK)
 
 #### `student_parent_links`
-| Column | Type | Notes |
-|--------|------|-------|
-| student_id, parent_user_id | FKs | unique pair |
-| relationship | string | Father/Mother/Guardian/Other |
-| is_primary | boolean | One primary per student |
-| parent_phone | nullable | Link-specific phone |
-| linked_by_user_id, linked_at | audit | |
+student_id + parent_user_id (unique pair), relationship, is_primary, parent_phone, linked_by_user_id, linked_at
 
 #### `receipts`
-| Column | Type | Notes |
-|--------|------|-------|
-| receipt_no | unique | Auto-generated |
-| student_id | FK nullable | |
-| student_name, class_name | snapshots | For printing |
-| amount | unsigned bigint | TZS whole numbers |
-| payment_date | date | |
-| payment_mode | enum | Cash, Bank, Mobile Money, Other |
-| reference, note | nullable | |
-| user_id | FK | Cashier |
-| payment_category_id | FK nullable | Legacy single category |
+receipt_no (unique), student_id, snapshots, amount (unsigned bigint TZS), payment_date, payment_mode enum, reference, note, user_id, legacy payment_category_id
 
 #### `receipt_payment_category` (pivot)
-| Column | Type |
-|--------|------|
-| receipt_id, payment_category_id | unique pair |
-| amount | per-category amount |
+receipt_id, payment_category_id, amount
 
 #### `payment_categories`
-| Column | Type |
-|--------|------|
-| name | unique |
-| default_amount | nullable TZS |
+name (unique), default_amount
 
 #### `fee_structures`
-| Column | Type |
-|--------|------|
-| name, class_name, amount, due_date, is_active | |
+name, class_name, amount, due_date, is_active
 
 #### `fee_structure_student` (pivot)
-Links students to applicable fee structures.
+fee_structure_id, student_id
 
 #### `receipt_counters`
-| Column | Type |
-|--------|------|
-| year, term | unique pair |
-| current | sequence number |
+year, term (unique pair), current
 
 #### `notification_logs`
-| Column | Type |
-|--------|------|
-| student_id | FK cascade |
-| channel | email/sms |
-| status | sent/failed/skipped |
-| sent_on | date |
-| message | text |
-| gateway_uid, delivery_status | SMS tracking |
-| read_at | parent read timestamp |
+student_id, channel, **event_type**, status, sent_on, message, gateway_uid, delivery_status, read_at  
+Indexes on (student_id, channel, sent_on), (status, sent_on), gateway_uid
 
-**Indexes:** (student_id, channel, sent_on), (status, sent_on), gateway_uid
+#### `bank_payment_submissions`
+parent_user_id, student_id, original_filename, file_path, bank, extracted_amount/reference/payment_date/account_number/raw_text, status, verification_message, receipt_id, reviewed_by_user_id, reviewed_at
 
-#### `settings` (singleton row)
-| Column | Purpose |
-|--------|---------|
-| school_name, contact_phone, contact_email, address, reg_number | Branding |
-| logo_path, receipt_footer | Receipt customization |
-| sms_enabled, sms_simulate | SMS toggles |
-| sms_api_endpoint, sms_api_token, sms_sender_id | Live SMS config |
+#### `settings` (singleton)
+Branding: school_name, contacts, address, reg_number, logo_path, receipt_footer  
+SMS: sms_enabled, sms_simulate, api endpoint/token/sender_id  
+Templates: sms_template_payment_received, fee_reminder, fee_reminder_14, overdue  
+Banks: bank_nmb_account_name/number, bank_crdb_account_name/number
 
-#### Legacy unused tables
-- `classes` — id, name (no model)
-- `streams` — id, class_id, name (no model)
+### Legacy unused tables
+`classes`, `streams` — migrated but **no Eloquent models**; app uses free-text `class_name`.
 
-#### Laravel infrastructure
-`sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `password_reset_tokens`
+### Laravel infrastructure
+`sessions`, `password_reset_tokens`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`
 
-### Migration count: 28 files
-Chronological from `0001_01_01_*` through `2026_06_18_100000_add_gateway_fields_to_notification_logs_table.php`
+### Migration count: **33 files**
+From `0001_01_01_*` through `2026_06_20_100100_create_bank_payment_submissions_table.php` (includes SMS templates, event_type, bank accounts).
 
 ---
 
 ## 12. Database — Seeders & Demo Data
 
-### `DatabaseSeeder.php`
-1. Runs `SettingSeeder`
-2. Backfills null roles → `school_admin`
-3. Creates super admin + school admin
-4. Runs `DemoDataSeeder`
+### `DatabaseSeeder`
+1. `SettingSeeder`  
+2. Backfill null roles → `school_admin`  
+3. Upsert Super Admin + School Admin  
+4. `DemoDataSeeder`  
 
-### `SettingSeeder.php`
-Creates Mbonea Secondary School settings with SMS config from `.env`.
+### `SettingSeeder`
+Mbonea branding, Swahili SMS templates, NMB/CRDB demo accounts; `sms_simulate` preferred when no live token.
 
-### `DemoDataSeeder.php`
-Creates a realistic school population:
-- **~106 students** (Forms I–IV) with Tanzanian names
-- **~101 parent accounts** (one per family; some siblings share a parent)
-- Showcase parents: Mkumbo, Gordon, Chaula (known demo logins)
-- Other parents: unique `+255620…` phones, password `Parent@2025`
-- 4 payment categories, 4 fee structures
-- Varied payment status: fully paid, partial, overdue, unpaid
-- Receipts across Cash, Mobile Money, Bank
+### `DemoDataSeeder`
+- Payment categories + fee structures  
+- Showcase parents (Mkumbo, Gordon, Chaula, …) with known passwords  
+- School population Forms I–IV; siblings may share a parent  
+- Receipts (Cash / Bank / Mobile Money); fully paid / partial / overdue mix  
+- **`SHOWCASE_PHONES` (10)** and **`SHOWCASE_NOTIFICATION_EMAILS` (4)** applied across contacts via `syncRealContactsThroughoutDatabase()`  
 
-### `bank_payment_submissions` table
-
-| Column | Purpose |
-|--------|---------|
-| parent_user_id, student_id | Who uploaded, for which child |
-| file_path | Stored PDF (`storage/app/bank-receipts/`) |
-| bank, extracted_amount, extracted_reference | Parsed from PDF |
-| extracted_payment_date, extracted_account_number | Parsed from PDF |
-| status | pending, verified, review, rejected |
-| receipt_id | Linked school receipt when verified |
-
-### Settings bank fields (`settings` table)
-
-`bank_nmb_account_name`, `bank_nmb_account_number`, `bank_crdb_account_name`, `bank_crdb_account_number`
+Default other-parent password: `Parent@2025`.
 
 ---
 
-## 13. Frontend — Layouts & Design System
+## 13. Frontend — Layouts, Design & Responsiveness
 
-### Authenticated layout — `resources/views/layouts/app.blade.php`
+### Authenticated layout — `layouts/app.blade.php`
 
-**Structure:**
 ```
 ┌─────────────────────────────────────────────┐
-│ Fixed navbar (school name, user chip,       │
-│ page actions, Generate Receipt, Profile,    │
-│ Logout)                                     │
+│ Fixed navbar (brand, user, page actions)    │
 ├──────────┬──────────────────────────────────┤
-│ Sidebar  │ Main content area                │
-│ (16.25rem│ - Flash alerts (success/warning/ │
-│  fixed)  │   error)                         │
-│          │ - Page title                     │
-│          │ - @yield('content')              │
+│ Sidebar  │ Main: flash alerts + content     │
+│ (fixed)  │                                  │
 └──────────┴──────────────────────────────────┘
+(+ Parent bottom nav on ≤ lg)
 ```
 
-**CSS:** `public/css/school-theme.css` (~875 lines)
+**Assets:** Bootstrap CSS, Bootstrap Icons, `school-theme.css` (no Vite required).
 
-**Design tokens:**
-- Primary green: `#0f3d2e`
-- Accent gold: `#b8860b`
-- Surface: `#f0f4f2`
-- Font: Plus Jakarta Sans, DM Sans
+**Design tokens:** primary `#0f3d2e`, gold `#b8860b`, surface `#f0f4f2`, font Plus Jakarta Sans.
 
-**JavaScript (inline in layout):**
-- Mobile sidebar toggle
-- Form loading states (`.form-with-loading`)
+### Guest layout — `layouts/guest.blade.php`
 
-### Guest layout — `resources/views/layouts/guest.blade.php`
+Split brand panel + auth card. Uses Bootstrap + `school-theme.css`.  
+**Vite is optional:** only loads if `public/build/manifest.json` exists (prevents `ViteManifestNotFoundException`).
 
-Split panel: school branding left, auth card right.  
-Uses Vite + Alpine.js for Breeze components.
+### Responsive behaviour (implemented)
 
-### Sidebar — `resources/views/layouts/partials/sidebar-nav.blade.php`
+| Feature | Implementation |
+|---------|----------------|
+| Mobile sidebar | Hamburger `#sidebarToggle` (`d-lg-none`) |
+| Parent bottom nav | `layouts/partials/parent-mobile-nav.blade.php` — Dashboard / Notifications / Bank / Profile |
+| Mobile data cards | `.mobile-card-list` / `.mobile-data-card` — show on small screens; tables use `.table-responsive` / desktop-only variants |
+| Touch targets | Min heights on controls in `school-theme.css` |
+| Stacked toolbars | Page actions wrap on tablet/phone |
+| Parent portal body | `.parent-portal-body` spacing above bottom nav |
 
-Admin: Dashboard, Receipts, Students, Reports, Notifications, **Bank Payments**  
-Super admin only: Fee Structures, Payment Categories, Admin Settings  
-Parent: Parent Portal, **Bank Payments**, My Notifications (unread badge), My Profile
+### Sidebar menus
 
-### Key Blade components — `resources/views/components/`
+**School Admin:** Dashboard, Receipts, Students, Reports, Messages, Notifications, Bank Payments  
+**Super Admin:** all of the above + Fee Structures, Payment Categories, Admin Settings  
+**Parent:** Parent Portal, Bank Payments, My Notifications (unread badge), My Profile + mobile bottom nav
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| `icon-btn` | `icon-btn.blade.php` | Primary UI button (icon + optional label) |
-| `table-actions` | `table-actions.blade.php` | View/Edit/Delete row actions |
-| `form-actions` | `form-actions.blade.php` | Submit + Cancel pair |
+### Blade components
+
+`icon-btn`, `table-actions`, `form-actions`, plus Breeze auth components under `components/`.
 
 ---
 
 ## 14. Frontend — Every Page & UI Action
 
-### Login — `resources/views/auth/login.blade.php`
-**Route:** GET/POST `/login`  
-**Actions:** Role tabs (School Admin / Parent / Super Admin), email OR phone field, password, remember me, forgot password (hidden for parents)  
-**JS:** Toggles email vs phone input per role tab
+### Auth
+Login (role tabs), register, forgot/reset password, verify email, confirm password — `resources/views/auth/*`
 
----
-
-### Dashboard — `resources/views/dashboard.blade.php`
-**Route:** GET `/dashboard`  
-**Displays:** 4 KPI cards, payment mode chart, top classes, recent receipts, category totals  
-**Actions:** Generate receipt, Register student, Reports, Notifications, View unpaid
-
----
+### Admin dashboard
+KPI cards, payment modes, top classes, recent receipts — links to receipt/student/reports/unpaid
 
 ### Receipts
-
-| Page | File | Actions |
-|------|------|---------|
-| List | `receipts/index.blade.php` | Filter, New receipt, View/Edit/Delete per row |
-| Create | `receipts/create.blade.php` | Student typeahead (API), dynamic category rows, total calculator, Save and print |
-| Show | `receipts/show.blade.php` | Thermal 80mm print layout, auto-print on `?print=1`, PDF download link |
-| Edit | `receipts/edit.blade.php` | Full edit form |
-| PDF | `receipts/pdf.blade.php` | DomPDF template (download, not browser page) |
-
----
+index (filters), create (student typeahead + category rows), show (thermal print `?print=1`), edit, PDF download
 
 ### Students
+index (search, send reminder, clearance PDF), create/edit (parent fields, fee structures), import + result page
 
-| Page | File | Actions |
-|------|------|---------|
-| List | `students/index.blade.php` | Search, Import, Add, Edit/Delete/Send reminder per row |
-| Create/Edit | `students/create.blade.php`, `edit.blade.php` | Admission, class, parent fields partial, fee structures |
-| Parent fields | `students/partials/parent-fields.blade.php` | Portal account, relationship, notification email vs portal email |
-| Import | `students/import.blade.php` | File upload .xlsx/.csv |
+### Fee structures / Payment categories
+CRUD forms (super admin)
 
----
+### Reports hub & suite
+See §17 — index shortcuts + filter forms + HTML results + PDF exports
 
-### Fee Structures — `resources/views/fee-structures/`
-index, create, edit + `_form` partial: name, amount, class, due date, active flag
+### Messages centre — `messages/index.blade.php`
+Template overview, monthly SMS/email stats, automation schedule legend, link to send (1–5) and logs
 
-### Payment Categories — `resources/views/payment_categories/`
-index, create, edit: name, default amount
+### Notification logs
+Stat cards, filters, manual log CRUD, send form (checkboxes max 5), resend/refresh/mark delivered
 
----
+### Bank payments (bursar)
+Status filters, show extracted data, approve/reject, download proof PDF
 
-### Reports
+### Settings (super admin)
+School info, logo, receipt footer, SMS enable/simulate/API/sender, Swahili templates, NMB/CRDB accounts, test SMS
 
-| Page | File | Actions |
-|------|------|---------|
-| Filter | `reports/index.blade.php` | Date presets, class, category, mode, amount range; Generate; Export Excel/PDF |
-| Results | `reports/results.blade.php` | Summary cards, receipt table, export buttons |
-| Unpaid | `reports/unpaid.blade.php` | Overdue flags, bulk Send reminders, per-student Send reminder |
-| PDF | `reports/pdf.blade.php` | DomPDF template |
-
----
-
-### Notification Logs
-
-| Page | File | Actions |
-|------|------|---------|
-| Index | `notification-logs/index.blade.php` | Stat cards (Delivered/Failed/Skipped/All), filters, Send to parent, Record log, row actions |
-| Show | `notification-logs/show.blade.php` | Full detail, gateway UID, resend/refresh/mark delivered |
-| Send | `notification-logs/send.blade.php` | Student select, SMS/email checkboxes, custom SMS text |
-| Create/Edit | `notification-logs/create.blade.php`, `edit.blade.php` | Manual log CRUD |
-| Resend buttons | `notification-logs/partials/resend-button.blade.php` | Resend SMS, Refresh status, Mark delivered |
-
----
-
-### Admin Settings — `resources/views/settings/edit.blade.php` (super admin only)
-School name, reg number, contacts, address, logo upload, receipt footer, SMS enable/simulate/API/sender ID, test SMS phone
-
----
-
-### Profile — `resources/views/profile/edit.blade.php`
-Update name/email, change password, delete account (modal)
-
----
-
-### Parent Portal
-
-| Page | File | Actions |
-|------|------|---------|
-| Dashboard | `parents/dashboard.blade.php` | Per-child balance cards, bank pay CTA, clearance cert |
-| Student history | `parents/student-history.blade.php` | Fee structures, receipts, upload bank receipt |
-| **Bank payments** | `parents/bank-payments.blade.php` | School bank accounts, upload PDF, submission history |
-| Notifications | `parents/notifications.blade.php` | Filter, Mark all read, Mark as read per row |
-
-### Bank payment review (admin)
-
-| Page | File | Actions |
-|------|------|---------|
-| Index | `bank-payments/index.blade.php` | Filter by status, review queue |
-| Show | `bank-payments/show.blade.php` | View extracted data, approve/reject, download PDF |
+### Parent portal
+Dashboard (balances + CTAs), student history, notifications inbox, bank payments upload + history, clearance certificate download
 
 ---
 
 ## 15. Parent Portal vs Admin Portal
 
-| Feature | Admin | Parent |
-|---------|-------|--------|
-| Login | Email + password | Phone + password |
-| Home | `/dashboard` | `/parent/dashboard` |
-| Students | Full CRUD | Read-only own children |
-| Receipts | Create/edit/delete (super admin delete) | View history only |
-| **Bank payments** | Review queue, approve/reject | Upload PDF, auto-verify |
-| Reports | Full access + clearance | None |
-| **Clearance certificate** | Per student | Download when fully paid |
-| Notifications | Send + manage logs | Read inbox only |
-| Admin Settings | Super admin only | None |
-| Generate receipt button | Yes (navbar) | No |
-| Data scope | All school data | Linked children only |
+| Feature | School Admin | Super Admin | Parent |
+|---------|--------------|-------------|--------|
+| Login | Email | Email | Phone |
+| Home | `/dashboard` | `/dashboard` | `/parent/dashboard` |
+| Data scope | All school | All school + settings | **Linked children only** |
+| Create receipts | Yes | Yes | No |
+| Upload bank PDF | No (reviews) | No (reviews) | Yes |
+| Reports / Messages | Yes | Yes | No |
+| Send SMS batch 1–5 | Yes | Yes | No |
+| Fee structures / Settings | No | Yes | No |
+| Clearance certificate | Yes (any student) | Yes | Only own fully paid children |
 
 ---
 
@@ -929,235 +667,217 @@ Update name/email, change password, delete account (modal)
 
 ```
 Admin → Receipts → Create
-  → Select student (typeahead: GET api.students.search)
-  → Add payment categories + amounts
-  → POST receipts.store (ReceiptController)
-    → Receipt model boot generates receipt_no
+  → Select student (api.students.search)
+  → Categories + amounts + mode
+  → ReceiptController@store
+    → receipt_no via ReceiptCounter
     → syncPaymentCategories()
-    → ParentPaymentNotifier::notify()
-      → ParentReminderService::notifyPayment()
-        → Email: PaymentReceivedNotification
-        → SMS: SmsService::send()
-        → notification_logs created
-  → Redirect to receipts.show?print=1 (thermal print)
+    → ParentPaymentNotifier → SMS + email → notification_logs
+  → receipts.show?print=1
 ```
 
-### B. Send fee reminder (manual)
+### B. Manual / template reminder (batch 1–5)
 
 ```
-Admin → Notification Logs → Send to parent
-  → Select student, check SMS and/or email
-  → POST notification-logs.send.store
-    → ParentReminderService::sendFeeReminder(manual=true)
-      → Email: FeeReminderMailable
-      → SMS: SmsService::send()
-      → notification_logs created
+Admin → Messages or Notification Logs → Send
+   OR Unpaid report → select checkboxes
+  → BatchParentReminderRequest (min 1, max 5; ≥1 channel)
+  → ParentReminderService::sendBatchToStudents()
+  → Per student: template render → SMS/email → notification_logs
 ```
 
-### C. Scheduled reminders (automated milestones)
+### C. Automated milestones (cron)
 
 ```
-Cron 06:00 → fees:send-reminders
-  → ParentReminderService::runAutomatedReminders()
-    → 14 days before due: fee_reminder_14 template
-    → 7, 3, 0 days before due: fee_reminder template
-    → After due date: overdue template (daily)
-    → Skip fully paid students; dedup by event_type in notification_logs
+06:00 → fees:send-reminders
+  → runAutomatedReminders()
+  → Exact 14 / 7 / 3 / 0 days before due + overdue daily
+  → Skip fully paid; dedup by event_type
 ```
 
-### D. Parent bank payment upload
+### D. Parent bank payment
 
 ```
-Parent → Bank Payments (or child profile → Upload bank receipt)
-  → Pay fees at school NMB/CRDB account (shown on page)
-  → Select which child (important for multi-child families)
-  → Upload bank receipt PDF
-  → BankReceiptParser extracts amount, ref, account, date
-  → BankPaymentVerificationService validates against settings + balance
-  → If verified: Receipt created (mode Bank), parent notified SMS/email
-  → If review: school admin → Bank Payments → Approve/Reject
+Parent → Bank Payments → select child → upload PDF
+  → BankReceiptParser → BankPaymentVerificationService
+  → verified: create Receipt (Bank) + notify
+  → review: bursar Approves/Rejects
+  → rejected: show error
 ```
 
-### E. Resend failed SMS
+### E. Clearance certificate
 
 ```
-Admin → Notification Logs → Resend SMS button
-  → POST notification-logs/{id}/resend
-    → ParentReminderService::resendLog()
-      → SmsService::send()
-      → UPDATE same notification_logs row (status, gateway_uid, message)
+Fully paid student → ClearanceCertificateController
+  → DomPDF certificates/paid-in-full
+  → Parent or bursar download
 ```
 
-### F. SMS pipeline detail
+### F. Student import
 
 ```
-SmsService::send()
-  1. resolveConfig() from settings DB + .env
-  2. normalizeRecipient() → 255XXXXXXXXX
-  3. If disabled → skipped
-  4. If simulate → log to storage/logs/laravel.log → skipped
-  5. POST to iMart API with sender_id (uppercase COLLEGE)
-  6. If API accepts → sent (poll delivery status optionally)
-  7. Return SmsSendResult → logged in notification_logs
+Admin → Students → Import (.xlsx/.csv)
+  → StudentImportService → results page
 ```
 
-### G. Report export
+### G. Resend failed SMS
 
 ```
-Admin → Reports → set filters → Export Excel
-  → POST reports.export.excel
-    → ReceiptsReportExport (Maatwebsite)
-    → Download .xlsx
-
-Admin → Export PDF
-  → POST reports.export.pdf
-    → DomPDF renders reports/pdf.blade.php
-    → Download .pdf
+Notification Logs → Resend
+  → resendLog() → SmsService → update same log row
 ```
 
 ---
 
-## 17. Configuration & Environment
+## 17. Bursar Reports Suite
 
-### Key `.env` variables
+All built from **live DB data** (receipts, fee structures, notification_logs, bank_payment_submissions).
 
-| Variable | Purpose |
-|----------|---------|
-| `APP_URL` | Base URL (e.g. http://127.0.0.1:8088) |
-| `DB_*` | MariaDB connection |
-| `MAIL_*` | SMTP for emails |
-| `SMS_DRIVER` | `imart` |
-| `SMS_API_ENDPOINT` | iMart send URL |
-| `SMS_API_TOKEN` | API bearer token |
-| `SMS_SENDER_ID` | Sender ID (COLLEGE) |
+| Report | Route name(s) | Output |
+|--------|---------------|--------|
+| Hub + fee collection filters | `reports.index` | HTML form → generate / Excel / PDF |
+| Full fee position | `reports.fee-position` (+ `.pdf`) | Expected / paid / balance / status |
+| Receipt register | `reports.receipts` (+ `.pdf`) | Period receipt list |
+| Unpaid balances | `reports.unpaid` (+ `.pdf`) | Outstanding + send reminders 1–5 |
+| Paid / term clearance | `reports.paid` → `reports.clearance` (+ `.pdf`) | Fully paid list + per-student certificates |
+| SMS & email history | `reports.messages` (+ `.pdf`) | From notification_logs |
+| Bank payment proofs | `reports.bank-proofs` (+ `.pdf`) | Submissions + verified amounts |
 
-### Admin UI overrides (database `settings` table)
+Services: `FeeCollectionReportService`, `SchoolFeePositionReportService`, `ReceiptRegisterReportService`, `TermClearanceReportService`, `MessageHistoryReportService`, `BankPaymentReportService`.
 
-SMS can be configured in Super Admin → Admin Settings without editing `.env`:
-- Enable SMS ON/OFF
-- Simulate SMS ON/OFF (log only, no real send)
-- API endpoint, token, sender ID
+---
 
-### `config/services.php`
+## 18. SMS & Email Notification Rules
+
+### Config — `config/notifications.php`
 
 ```php
-'sms' => [
-    'driver' => env('SMS_DRIVER', 'generic'),
-    'endpoint' => env('SMS_API_ENDPOINT'),
-    'token' => env('SMS_API_TOKEN'),
-    'sender_id' => env('SMS_SENDER_ID', 'SCHOOL'),
-],
+'min_batch_parents' => 1,
+'max_batch_parents' => 5,
 ```
 
----
+### Manual / bursar-triggered sends
 
-## 18. Tests Coverage
+- UI: checkboxes; cannot select more than 5  
+- Server: `BatchParentReminderRequest` enforces **min 1 / max 5**  
+- Channels: SMS and/or email — at least one required  
+- Template selected or auto-resolved from student milestone  
+- Single-student send (`students.send-reminder`) = batch of 1  
 
-**19 test files, 79 test methods**
+### Automated cron
 
-| Test file | What it verifies |
-|-----------|------------------|
-| `BankPaymentSubmissionTest` | NMB/CRDB PDF parsing, auto-verify, parent upload, admin review |
-| `AutomatedReminderTest` | 14-day milestone, dedup, role access to fee structures |
-| `FeeCollectionReportTest` | Student sort order, payment SMS templates |
-| `FullyPaidStudentTest` | No reminders when paid; parent dashboard badge |
-| `TermClearanceReportTest` | Clearance report + certificate PDF |
-| `SettingControllerTest` | Super admin only settings access |
-| `SmsServiceTest` | Simulate, disabled, iMart payload, gateway acceptance, delivery check |
-| `NotificationLogControllerTest` | Full CRUD, resend, mark delivered, missing log redirect |
-| `ManualParentReminderTest` | Manual send, channel validation, unpaid quick-send |
-| `ParentNotificationsTest` | Parent scope, no duplicate payment logs |
-| `ParentPortalScopeTest` | Parent只能 see own children |
-| `StudentUpdateTest` | Parent contact persistence, portal vs notification email |
-| `AuthenticationTest` | Phone login, shared phone disambiguation |
-| `InstallFtrsCommandTest` | Install command seeds data |
-| Auth tests (6 files) | Register, reset password, verification, profile |
-| `ProfileTest` | Profile CRUD |
+- Full school scan for matching milestones (not limited to 5)  
+- Templates: `fee_reminder_14`, fee reminder variants, `overdue`  
+- Stored under Admin Settings (editable Swahili templates)
 
-**Not tested:** PDF generation, Excel export, receipt UI, live SMS API.
+### Placeholders (examples)
+
+`{student_name}`, `{amount}`, `{balance}`, `{due_date}`, `{days_until_due}`, `{receipt_no}`, `{school_name}`
+
+### Event types on logs
+
+Used for automation dedup and history reports (e.g. payment confirmation vs milestone reminder).
 
 ---
 
-## 19. File-by-File Inventory
+## 19. Configuration & Environment
 
-### `app/` — 48 PHP files
+### `.env.example` essentials
 
-| Path | Lines (approx) | Role |
-|------|----------------|------|
-| `Console/Commands/InstallFtrs.php` | ~80 | Install command |
-| `Console/Commands/SendFeeReminders.php` | ~40 | Scheduled reminders |
-| `Console/Commands/SyncParentPhones.php` | ~50 | Demo sync |
-| `Exports/ReceiptsReportExport.php` | ~100 | Excel export |
-| `Http/Controllers/DashboardController.php` | ~80 | Admin dashboard |
-| `Http/Controllers/FeeStructureController.php` | ~80 | Fee CRUD |
-| `Http/Controllers/NotificationLogController.php` | ~310 | Notification admin |
-| `Http/Controllers/ParentDashboardController.php` | ~120 | Parent portal |
-| `Http/Controllers/PaymentCategoryController.php` | ~70 | Category CRUD |
-| `Http/Controllers/ProfileController.php` | ~50 | User profile |
-| `Http/Controllers/ReceiptController.php` | ~200 | Receipt CRUD + PDF |
-| `Http/Controllers/ReportController.php` | ~180 | Reports + export |
-| `Http/Controllers/SettingController.php` | ~80 | School settings |
-| `Http/Controllers/StudentController.php` | ~250 | Student CRUD + import |
-| `Http/Controllers/Auth/*` (9 files) | ~50 each | Breeze auth |
-| `Http/Middleware/EnsureRole.php` | ~30 | Role guard |
-| `Http/Requests/Auth/LoginRequest.php` | ~120 | Multi-mode login |
-| `Http/Requests/ProfileUpdateRequest.php` | ~30 | Profile validation |
-| `Imports/StudentsImport.php` | ~30 | Bulk import |
-| `Mail/FeeReminderMailable.php` | ~40 | Reminder email |
-| `Models/*` (9 files) | 30–160 each | Eloquent models |
-| `Notifications/PaymentReceivedNotification.php` | ~60 | Payment email |
-| `Notifications/FeeReminderNotification.php` | ~40 | **Unused** |
-| `Providers/AppServiceProvider.php` | ~65 | Boot + view composer |
-| `Services/ParentReminderService.php` | ~320 | Notification orchestration |
-| `Services/ParentPaymentNotifier.php` | ~20 | Receipt notify wrapper |
-| `Services/SmsService.php` | 264 | iMart SMS integration |
-| `Services/SmsSendResult.php` | ~45 | SMS result DTO |
-| `Support/ParentStudentAdmission.php` | ~120 | Guardian linking |
-| `View/Components/AppLayout.php` | ~15 | Layout component |
-| `View/Components/GuestLayout.php` | ~15 | Guest layout component |
+| Variable | Default / purpose |
+|----------|-------------------|
+| `DB_CONNECTION` | **`mysql`** |
+| `DB_HOST` / `DB_PORT` | 127.0.0.1 / 3306 |
+| `DB_DATABASE` | `school_receipts` |
+| `DB_USERNAME` / `DB_PASSWORD` | root / (empty for default XAMPP) |
+| `SESSION_DRIVER` | database |
+| `CACHE_STORE` | **database** (Setting also cached 1h as `app_setting`) |
+| `QUEUE_CONNECTION` | database (notifications currently sync) |
+| `MAIL_*` | SMTP (e.g. Gmail) |
+| `SMS_DRIVER` | imart |
+| `SMS_API_ENDPOINT` / `SMS_API_TOKEN` / `SMS_SENDER_ID` | iMart credentials |
+| `APP_URL` | http://127.0.0.1:8088 |
 
-### `resources/views/` — 67 Blade files
+### Admin UI overrides (`settings` table)
 
-Listed in Section 14. Key directories:
-- `auth/` (6) — login, register, password flows
-- `receipts/` (6) — receipt UI + PDF
-- `students/` (5) — student management
-- `notification-logs/` (7) — reminder admin
-- `reports/` (4) — reporting
-- `parents/` (3) — parent portal
-- `components/` (17) — reusable UI pieces
-- `layouts/` (5) — app, guest, sidebar, icons
+SMS enable/simulate/API/templates and NMB/CRDB accounts without editing `.env`.
 
-### `database/migrations/` — 28 files
-Full schema in Section 11.
+### `config/services.php` SMS block
 
-### `tests/` — 18 files
-Full coverage in Section 18.
-
-### Root helpers
-| File | Purpose |
-|------|---------|
-| `.htaccess` | Redirect to `public/` for XAMPP |
-| `index.php` | Root redirect to public |
-| `routes/web.php` | Main routes |
-| `routes/auth.php` | Auth routes |
-| `routes/console.php` | Schedule |
-| `bootstrap/app.php` | App config + exception handlers |
+Driver, endpoint, token, sender_id from env (overridden by DB when set).
 
 ---
 
-## 20. Known Gaps & Technical Notes
+## 20. Tests Coverage
 
-1. **`FeeReminderNotification`** exists but is unused; **`FeeReminderMailable`** is the active email path.
-2. **`classes` / `streams` tables** have no models; app uses free-text `class_name`.
-3. **`Receipt` model** lacks `student()` BelongsTo relationship (column exists in DB).
-4. **`receipt_payment_category` pivot** has no database foreign keys.
-5. **Route ordering:** `/receipts/partial` and `/students/import` registered after resource routes (potential binding conflict).
-6. **README vs seeder** demo emails differ slightly (`@school.tz` vs `@mbonea.sc.tz`).
-7. **Queue** configured as `database` but notifications use synchronous `notifyNow()` / `Mail::send()`.
-8. **SMS delivery:** Gateway may report failure before carrier delivers; system marks `sent` on API acceptance; admin can Mark delivered manually.
-9. **No tests** for PDF/Excel export or receipt creation UI flow.
-10. **`layouts/navigation.blade.php`** is orphaned Breeze legacy — not used.
+**~26 test files** under `tests/Feature` and `tests/Unit`.
+
+| Area | Test files |
+|------|------------|
+| Auth | Authentication, Registration, Password*, EmailVerification, Profile |
+| Roles | RoleSeparationTest, SettingControllerTest |
+| Parent scope | ParentPortalScopeTest, ParentNotificationsTest |
+| SMS / reminders | ManualParentReminderTest, AutomatedReminderTest, SmsServiceTest, MessageCentreTest, NotificationLogControllerTest |
+| Bank payments | BankPaymentSubmissionTest |
+| Reports | BursarGeneratedReportsTest, FeeCollectionReportTest, TermClearanceReportTest, FullyPaidStudentTest |
+| Students | StudentUpdateTest, StudentImportTest |
+| Install | InstallFtrsCommandTest |
+
+Support trait: `tests/Support/AdmitsStudents.php`  
+PHPUnit uses **SQLite in-memory** (`phpunit.xml`) so tests run without MySQL.
+
+---
+
+## 21. File-by-File Inventory
+
+### Controllers (`app/Http/Controllers/`)
+
+Dashboard, Receipt, Student, Report, Message, NotificationLog, BankPaymentSubmission, ParentDashboard, ParentBankPayment, ClearanceCertificate, FeeStructure, PaymentCategory, Setting, Profile + `Auth/*`
+
+### Services (`app/Services/`) — 14
+
+SmsService, SmsSendResult, ParentReminderService, ParentPaymentNotifier, NotificationTemplateService, BankReceiptParser, BankPaymentVerificationService, StudentImportService, FeeCollectionReportService, SchoolFeePositionReportService, ReceiptRegisterReportService, TermClearanceReportService, MessageHistoryReportService, BankPaymentReportService
+
+### Models — 10
+
+User, Student, Receipt, NotificationLog, BankPaymentSubmission, Setting, FeeStructure, PaymentCategory, ReceiptCounter, StudentParentLink
+
+### Views — ~85 Blade files
+
+auth, bank-payments, certificates, dashboard, emails, fee-structures, messages, notification-logs, parents, payment_categories, profile, receipts, reports (HTML + PDF templates), settings, students, layouts, components
+
+### Diagrams — `docs/diagrams/`
+
+PlantUML + PNG/SVG + Word-style hand-drawn SVGs (use case, activity, class, sequence, ER). See §22.
+
+---
+
+## 22. UML Diagrams
+
+| Location | Contents |
+|----------|----------|
+| `docs/diagrams/png/` | Rendered PlantUML diagrams |
+| `docs/diagrams/word-style/png/` | Clean Word-import style diagrams |
+| `docs/diagrams/FTRS-Diagrams-Word-Import.zip` | Bundle |
+| `docs/diagrams/FTRS-Word-Style-Diagrams.zip` | Clean-style bundle |
+
+Covered: Use Case, Activity (admin payment + parent bank), Class, Sequence (payment / bank / reminders), ER Diagram.
+
+---
+
+## 23. Known Gaps & Technical Notes
+
+1. **`FeeReminderNotification`** exists but is unused; **`FeeReminderMailable`** is the active email path.  
+2. **`classes` / `streams` tables** have no models; app uses free-text `class_name`.  
+3. **`receipt_payment_category` pivot** may lack DB-level FKs depending on migration history.  
+4. **README demo credentials** may still list older `@school.tz` / `password` — **seeders are authoritative** (§2).  
+5. **Queue** is `database` but SMS/email typically run synchronously.  
+6. **SMS delivery:** API acceptance → `sent`; carrier lag possible — admin can Mark delivered / refresh status.  
+7. **Vite** optional for guest pages; dashboard does not depend on Vite.  
+8. **XAMPP PHP gd extension** required for Excel (PhpSpreadsheet) on Windows.  
+9. **Composer on Windows:** use `C:\xampp\php\php.exe` + Composer path; prefer CMD if PowerShell blocks `npm.ps1`.  
+10. **Shared parent phones** intentional (unique dropped); login disambiguates by password.  
+11. Fixed/obsolete doc items since earlier revisions: Receipt now has `student()` relation; MariaDB references replaced by MySQL; super admin school-ops access documented correctly; bursar report suite + batch 1–5 documented.
 
 ---
 
@@ -1165,22 +885,22 @@ Full coverage in Section 18.
 
 | Need to change… | Look in… |
 |-----------------|----------|
-| SMS sending logic | `app/Services/SmsService.php` |
-| Reminder content/timing | `app/Services/ParentReminderService.php` |
-| Login behavior | `app/Http/Requests/Auth/LoginRequest.php` |
-| Admin sidebar menu | `resources/views/layouts/partials/sidebar-nav.blade.php` |
-| UI colors/theme | `public/css/school-theme.css` |
-| School name/logo | Super Admin → Admin Settings OR `database/seeders/SettingSeeder.php` |
-| Demo data | `database/seeders/DemoDataSeeder.php` |
+| SMS sending | `app/Services/SmsService.php` |
+| Reminder timing / batch send | `app/Services/ParentReminderService.php` |
+| Batch 1–5 validation | `config/notifications.php`, `BatchParentReminderRequest` |
+| Login | `app/Http/Requests/Auth/LoginRequest.php` |
+| Sidebar / mobile nav | `resources/views/layouts/partials/sidebar-nav.blade.php`, `parent-mobile-nav.blade.php` |
+| Theme / responsive CSS | `public/css/school-theme.css` |
+| Settings / templates / banks | Super Admin → Settings OR `SettingSeeder` |
+| Demo data / phones | `database/seeders/DemoDataSeeder.php` |
 | Routes | `routes/web.php` |
-| Database schema | `database/migrations/` |
-| Receipt number format | `app/Models/Receipt.php` → `generateScopedNo()` |
-| Parent-student linking | `app/Support/ParentStudentAdmission.php` |
-| Bank receipt parsing | `app/Services/BankReceiptParser.php` |
-| Bank payment verification | `app/Services/BankPaymentVerificationService.php` |
-| School bank accounts | Super Admin → Admin Settings |
-| Exception handling | `bootstrap/app.php` |
+| Schema | `database/migrations/` |
+| Receipt numbers | `app/Models/Receipt.php` |
+| Parent linking / ownership | `app/Support/ParentStudentAdmission.php` |
+| Bank parse / verify | `BankReceiptParser`, `BankPaymentVerificationService` |
+| Bursar reports | `ReportController` + `app/Services/*ReportService.php` |
+| Exceptions / role middleware | `bootstrap/app.php`, `EnsureRole` |
 
 ---
 
-*This document describes the complete FTRS system as of June 2026 (bank payment verification, expanded demo school, milestone SMS automation). For live source code, refer to the repository files listed above.*
+*This document describes the complete FTRS system as of July 2026: MySQL, full bursar reports, batch SMS/email (1–5), bank payment verification, parent scoping, responsive UI, super-admin full access, and live-code inventory. For source of truth, prefer the repository files referenced above.*

@@ -1,0 +1,33 @@
+@startuml FTRS_Sequence_Manual_Reminder_Simple
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam sequenceArrowThickness 1
+skinparam ParticipantBorderColor #C00000
+skinparam LifeLineBorderColor #C00000
+skinparam ArrowColor #C00000
+
+title SEQUENCE DIAGRAM — Send Fee Reminder (1–5 Parents)
+
+actor Admin
+participant System
+database Database
+participant "Notification\nService" as NS
+actor Parent
+
+Admin -> System : selectParents(1 to 5)
+Admin -> System : chooseTemplate()
+Admin -> System : sendReminder()
+
+loop for each selected parent
+  System -> Database : loadStudentBalance()
+  Database --> System : student data
+  System -> NS : sendSMS()
+  System -> NS : sendEmail()
+  NS -> Parent : deliver
+  System -> Database : logMessage()
+end
+
+System --> Admin : send complete
+
+@enduml

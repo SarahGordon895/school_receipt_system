@@ -1,0 +1,26 @@
+@startuml FTRS_Activity_School_Admin_Payment
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ActivityBorderColor #C00000
+skinparam ActivityFontColor black
+skinparam ActivityBackgroundColor white
+skinparam ArrowColor #C00000
+
+title ACTIVITY DIAGRAM — School Admin Records Payment
+
+|School Admin|
+start
+:Login (School Admin);
+:Enter payment details\n(student, amount, mode);
+if (Valid data?) then (yes)
+  :Save payment record\n(create receipt);
+  :Update student balance;
+  :Trigger notification;
+  :Send SMS and email\nto parent;
+else (no)
+  :Display error message;
+endif
+stop
+
+@enduml

@@ -1,0 +1,34 @@
+@startuml FTRS_Sequence_Bank_Payment_Simple
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam sequenceArrowThickness 1
+skinparam ParticipantBorderColor #C00000
+skinparam LifeLineBorderColor #C00000
+skinparam ArrowColor #C00000
+
+title SEQUENCE DIAGRAM — Parent Bank Payment Upload
+
+actor Parent
+participant System
+database Database
+participant "Bank\nVerifier" as BV
+participant "Notification\nService" as NS
+
+Parent -> System : uploadBankReceipt()
+System -> BV : parseAndVerify()
+BV -> Database : checkBalance()
+Database --> BV : balance
+BV --> System : verified / review / rejected
+
+alt verified
+  System -> Database : savePayment()
+  System -> NS : sendSMS()
+  System -> NS : sendEmail()
+  NS -> Parent : deliver
+else review
+  System -> Database : saveForReview()
+  System --> Parent : pending approval
+end
+
+@enduml

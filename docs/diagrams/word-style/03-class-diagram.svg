@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="420" viewBox="0 0 780 420">
+  <rect width="100%" height="100%" fill="white"/>
+  <text x="390" y="28" text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold">CLASS DIAGRAM</text>
+  <text x="390" y="46" text-anchor="middle" font-family="Arial" font-size="11">Mbonea Fee Tracking &amp; Receipt System (FTRS)</text>
+
+  <!-- Parent -->
+  <rect x="40" y="80" width="150" height="110" fill="white" stroke="black" stroke-width="1.5"/>
+  <line x1="40" y1="105" x2="190" y2="105" stroke="black" stroke-width="1.5"/>
+  <text x="115" y="98" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold">Parent</text>
+  <text x="50" y="125" font-family="Arial" font-size="10">parent_id : int</text>
+  <text x="50" y="142" font-family="Arial" font-size="10">phone : string</text>
+  <text x="50" y="159" font-family="Arial" font-size="10">email : string</text>
+  <text x="50" y="176" font-family="Arial" font-size="10">password : string</text>
+
+  <!-- Student -->
+  <rect x="300" y="70" width="170" height="130" fill="white" stroke="black" stroke-width="1.5"/>
+  <line x1="300" y1="95" x2="470" y2="95" stroke="black" stroke-width="1.5"/>
+  <text x="385" y="88" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold">Student</text>
+  <text x="310" y="115" font-family="Arial" font-size="10">student_id : int</text>
+  <text x="310" y="132" font-family="Arial" font-size="10">admission_no : string</text>
+  <text x="310" y="149" font-family="Arial" font-size="10">name : string</text>
+  <text x="310" y="166" font-family="Arial" font-size="10">class_name : string</text>
+  <text x="310" y="183" font-family="Arial" font-size="10">balance : decimal</text>
+
+  <!-- FeeStructure -->
+  <rect x="560" y="80" width="170" height="110" fill="white" stroke="black" stroke-width="1.5"/>
+  <line x1="560" y1="105" x2="730" y2="105" stroke="black" stroke-width="1.5"/>
+  <text x="645" y="98" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold">FeeStructure</text>
+  <text x="570" y="125" font-family="Arial" font-size="10">fee_id : int</text>
+  <text x="570" y="142" font-family="Arial" font-size="10">class_level : string</text>
+  <text x="570" y="159" font-family="Arial" font-size="10">amount : decimal</text>
+  <text x="570" y="176" font-family="Arial" font-size="10">due_date : date</text>
+
+  <!-- Payment -->
+  <rect x="300" y="250" width="170" height="130" fill="white" stroke="black" stroke-width="1.5"/>
+  <line x1="300" y1="275" x2="470" y2="275" stroke="black" stroke-width="1.5"/>
+  <text x="385" y="268" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold">Payment</text>
+  <text x="310" y="295" font-family="Arial" font-size="10">payment_id : int</text>
+  <text x="310" y="312" font-family="Arial" font-size="10">receipt_no : string</text>
+  <text x="310" y="329" font-family="Arial" font-size="10">amount : decimal</text>
+  <text x="310" y="346" font-family="Arial" font-size="10">payment_date : date</text>
+  <text x="310" y="363" font-family="Arial" font-size="10">student_id : int</text>
+
+  <!-- User -->
+  <rect x="40" y="250" width="150" height="110" fill="white" stroke="black" stroke-width="1.5"/>
+  <line x1="40" y1="275" x2="190" y2="275" stroke="black" stroke-width="1.5"/>
+  <text x="115" y="268" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold">User</text>
+  <text x="50" y="295" font-family="Arial" font-size="10">user_id : int</text>
+  <text x="50" y="312" font-family="Arial" font-size="10">username : string</text>
+  <text x="50" y="329" font-family="Arial" font-size="10">password : string</text>
+  <text x="50" y="346" font-family="Arial" font-size="10">role : string</text>
+
+  <!-- Notification -->
+  <rect x="560" y="250" width="170" height="130" fill="white" stroke="black" stroke-width="1.5"/>
+  <line x1="560" y1="275" x2="730" y2="275" stroke="black" stroke-width="1.5"/>
+  <text x="645" y="268" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold">Notification</text>
+  <text x="570" y="295" font-family="Arial" font-size="10">notification_id : int</text>
+  <text x="570" y="312" font-family="Arial" font-size="10">message : string</text>
+  <text x="570" y="329" font-family="Arial" font-size="10">channel : string</text>
+  <text x="570" y="346" font-family="Arial" font-size="10">status : string</text>
+  <text x="570" y="363" font-family="Arial" font-size="10">student_id : int</text>
+
+  <!-- relationships -->
+  <line x1="190" y1="130" x2="300" y2="130" stroke="black" stroke-width="1.2"/>
+  <text x="235" y="122" font-family="Arial" font-size="10">1</text>
+  <text x="270" y="122" font-family="Arial" font-size="10">*</text>
+
+  <line x1="470" y1="130" x2="560" y2="130" stroke="black" stroke-width="1.2"/>
+  <text x="505" y="122" font-family="Arial" font-size="10">*</text>
+  <text x="540" y="122" font-family="Arial" font-size="10">1</text>
+
+  <line x1="385" y1="200" x2="385" y2="250" stroke="black" stroke-width="1.2"/>
+  <text x="392" y="220" font-family="Arial" font-size="10">1</text>
+  <text x="392" y="242" font-family="Arial" font-size="10">*</text>
+
+  <line x1="470" y1="170" x2="560" y2="300" stroke="black" stroke-width="1.2"/>
+  <text x="505" y="220" font-family="Arial" font-size="10">1</text>
+  <text x="540" y="290" font-family="Arial" font-size="10">*</text>
+
+  <line x1="190" y1="300" x2="300" y2="300" stroke="black" stroke-width="1.2" stroke-dasharray="5,4"/>
+  <text x="230" y="292" font-family="Arial" font-size="10">records</text>
+</svg>

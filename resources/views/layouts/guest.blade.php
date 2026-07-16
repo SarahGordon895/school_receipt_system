@@ -28,7 +28,9 @@
     <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
     @include('layouts.partials.icons-head')
     <link href="{{ asset('css/school-theme.css') }}" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if (file_exists(public_path('build/manifest.json')))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @endif
 </head>
 
 <body class="guest-body">

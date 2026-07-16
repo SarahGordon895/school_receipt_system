@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="520" viewBox="0 0 820 520">
+  <rect width="100%" height="100%" fill="white"/>
+  <text x="410" y="28" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold">USE CASE DIAGRAM</text>
+  <text x="410" y="46" text-anchor="middle" font-family="Arial, sans-serif" font-size="11">Mbonea Fee Tracking &amp; Receipt System (FTRS)</text>
+
+  <!-- School Admin actor -->
+  <circle cx="70" cy="95" r="14" fill="none" stroke="black" stroke-width="1.5"/>
+  <line x1="70" y1="109" x2="70" y2="150" stroke="black" stroke-width="1.5"/>
+  <line x1="45" y1="125" x2="95" y2="125" stroke="black" stroke-width="1.5"/>
+  <line x1="70" y1="150" x2="50" y2="185" stroke="black" stroke-width="1.5"/>
+  <line x1="70" y1="150" x2="90" y2="185" stroke="black" stroke-width="1.5"/>
+  <text x="70" y="205" text-anchor="middle" font-family="Arial" font-size="11">School Admin</text>
+
+  <!-- Parent actor -->
+  <circle cx="70" cy="360" r="14" fill="none" stroke="black" stroke-width="1.5"/>
+  <line x1="70" y1="374" x2="70" y2="415" stroke="black" stroke-width="1.5"/>
+  <line x1="45" y1="390" x2="95" y2="390" stroke="black" stroke-width="1.5"/>
+  <line x1="70" y1="415" x2="50" y2="450" stroke="black" stroke-width="1.5"/>
+  <line x1="70" y1="415" x2="90" y2="450" stroke="black" stroke-width="1.5"/>
+  <text x="70" y="470" text-anchor="middle" font-family="Arial" font-size="11">Parent</text>
+
+  <!-- Super Admin actor -->
+  <circle cx="750" cy="250" r="14" fill="none" stroke="black" stroke-width="1.5"/>
+  <line x1="750" y1="264" x2="750" y2="305" stroke="black" stroke-width="1.5"/>
+  <line x1="725" y1="280" x2="775" y2="280" stroke="black" stroke-width="1.5"/>
+  <line x1="750" y1="305" x2="730" y2="340" stroke="black" stroke-width="1.5"/>
+  <line x1="750" y1="305" x2="770" y2="340" stroke="black" stroke-width="1.5"/>
+  <text x="750" y="360" text-anchor="middle" font-family="Arial" font-size="11">Super Admin</text>
+
+  <!-- Use case ovals -->
+  <g font-family="Arial" font-size="11" fill="black">
+    <ellipse cx="410" cy="78" rx="105" ry="22" fill="white" stroke="black" stroke-width="1.5"/>
+    <text x="410" y="82" text-anchor="middle">Register student</text>
+
+    <ellipse cx="410" cy="118" rx="115" ry="22" fill="white" stroke="black" stroke-width="1.5"/>
+    <text x="410" y="122" text-anchor="middle">Manage fee structures</text>
+
+    <ellipse cx="410" cy="158" rx="95" ry="22" fill="white" stroke="black" stroke-width="1.5"/>
+    <text x="410" y="162" text-anchor="middle">Record payment</text>
+
+    <ellipse cx="410" cy="198" rx="95" ry="22" fill="white" stroke="black" stroke-width="1.5"/>
+    <text x="410" y="202" text-anchor="middle">View fee balance</text>
+
+    <ellipse cx="410" cy="238" rx="115" ry="22" fill="white" stroke="black" stroke-width="1.5"/>
+    <text x="410" y="242" text-anchor="middle">Receive notification</text>
+
+    <ellipse cx="410" cy="278" rx="100" ry="22" fill="white" stroke="black" stroke-width="1.5"/>
+    <text x="410" y="282" text-anchor="middle">Generate reports</text>
+
+    <ellipse cx="410" cy="318" rx="120" ry="22" fill="white" stroke="black" stroke-width="1.5"/>
+    <text x="410" y="322" text-anchor="middle">Manage system settings</text>
+
+    <ellipse cx="410" cy="358" rx="105" ry="22" fill="white" stroke="black" stroke-width="1.5"/>
+    <text x="410" y="362" text-anchor="middle">Configure SMS/Email</text>
+  </g>
+
+  <!-- Lines School Admin -->
+  <line x1="95" y1="130" x2="305" y2="78" stroke="black" stroke-width="1.2"/>
+  <line x1="95" y1="130" x2="295" y2="118" stroke="black" stroke-width="1.2"/>
+  <line x1="95" y1="130" x2="315" y2="158" stroke="black" stroke-width="1.2"/>
+  <line x1="95" y1="130" x2="315" y2="198" stroke="black" stroke-width="1.2"/>
+  <line x1="95" y1="130" x2="310" y2="278" stroke="black" stroke-width="1.2"/>
+
+  <!-- Lines Parent -->
+  <line x1="95" y1="390" x2="315" y2="198" stroke="black" stroke-width="1.2"/>
+  <line x1="95" y1="390" x2="295" y2="238" stroke="black" stroke-width="1.2"/>
+
+  <!-- Lines Super Admin -->
+  <line x1="735" y1="250" x2="515" y2="78" stroke="black" stroke-width="1.2"/>
+  <line x1="735" y1="250" x2="525" y2="118" stroke="black" stroke-width="1.2"/>
+  <line x1="735" y1="250" x2="505" y2="158" stroke="black" stroke-width="1.2"/>
+  <line x1="735" y1="250" x2="505" y2="198" stroke="black" stroke-width="1.2"/>
+  <line x1="735" y1="250" x2="525" y2="238" stroke="black" stroke-width="1.2"/>
+  <line x1="735" y1="250" x2="510" y2="278" stroke="black" stroke-width="1.2"/>
+  <line x1="735" y1="250" x2="530" y2="318" stroke="black" stroke-width="1.2"/>
+  <line x1="735" y1="250" x2="515" y2="358" stroke="black" stroke-width="1.2"/>
+</svg>

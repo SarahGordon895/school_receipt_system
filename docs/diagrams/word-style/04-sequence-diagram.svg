@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="480" viewBox="0 0 720 480">
+  <rect width="100%" height="100%" fill="white"/>
+  <text x="360" y="28" text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold">SEQUENCE DIAGRAM</text>
+  <text x="360" y="46" text-anchor="middle" font-family="Arial" font-size="11">Record Payment and Notify Parent</text>
+
+  <!-- participants -->
+  <text x="60" y="75" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">Admin</text>
+  <line x1="60" y1="82" x2="60" y2="450" stroke="black" stroke-width="1" stroke-dasharray="6,4"/>
+
+  <text x="180" y="75" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">System</text>
+  <line x1="180" y1="82" x2="180" y2="450" stroke="black" stroke-width="1" stroke-dasharray="6,4"/>
+
+  <text x="330" y="75" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">Database</text>
+  <line x1="330" y1="82" x2="330" y2="450" stroke="black" stroke-width="1" stroke-dasharray="6,4"/>
+
+  <text x="500" y="75" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">Notification</text>
+  <text x="500" y="90" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">Service</text>
+  <line x1="500" y1="98" x2="500" y2="450" stroke="black" stroke-width="1" stroke-dasharray="6,4"/>
+
+  <text x="660" y="75" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">Parent</text>
+  <line x1="660" y1="82" x2="660" y2="450" stroke="black" stroke-width="1" stroke-dasharray="6,4"/>
+
+  <!-- messages -->
+  <line x1="60" y1="120" x2="180" y2="120" stroke="black" stroke-width="1.2"/>
+  <polygon points="175,116 185,120 175,124" fill="black"/>
+  <text x="120" y="112" text-anchor="middle" font-family="Arial" font-size="10">login()</text>
+
+  <line x1="180" y1="145" x2="330" y2="145" stroke="black" stroke-width="1.2"/>
+  <polygon points="325,141 335,145 325,149" fill="black"/>
+  <text x="255" y="137" text-anchor="middle" font-family="Arial" font-size="10">verify()</text>
+
+  <line x1="330" y1="170" x2="180" y2="170" stroke="black" stroke-width="1.2" stroke-dasharray="4,3"/>
+  <polygon points="185,166 175,170 185,174" fill="black"/>
+  <text x="255" y="162" text-anchor="middle" font-family="Arial" font-size="10">success</text>
+
+  <line x1="60" y1="200" x2="180" y2="200" stroke="black" stroke-width="1.2"/>
+  <polygon points="175,196 185,200 175,204" fill="black"/>
+  <text x="120" y="192" text-anchor="middle" font-family="Arial" font-size="10">enterPayment()</text>
+
+  <line x1="180" y1="225" x2="330" y2="225" stroke="black" stroke-width="1.2"/>
+  <polygon points="325,221 335,225 325,229" fill="black"/>
+  <text x="255" y="217" text-anchor="middle" font-family="Arial" font-size="10">savePayment()</text>
+
+  <line x1="330" y1="250" x2="180" y2="250" stroke="black" stroke-width="1.2" stroke-dasharray="4,3"/>
+  <polygon points="185,246 175,250 185,254" fill="black"/>
+  <text x="255" y="242" text-anchor="middle" font-family="Arial" font-size="10">confirmed</text>
+
+  <line x1="180" y1="280" x2="330" y2="280" stroke="black" stroke-width="1.2"/>
+  <polygon points="325,276 335,280 325,284" fill="black"/>
+  <text x="255" y="272" text-anchor="middle" font-family="Arial" font-size="10">calcBalance()</text>
+
+  <line x1="330" y1="305" x2="180" y2="305" stroke="black" stroke-width="1.2" stroke-dasharray="4,3"/>
+  <polygon points="185,301 175,305 185,309" fill="black"/>
+  <text x="255" y="297" text-anchor="middle" font-family="Arial" font-size="10">balance</text>
+
+  <line x1="180" y1="335" x2="500" y2="335" stroke="black" stroke-width="1.2"/>
+  <polygon points="495,331 505,335 495,339" fill="black"/>
+  <text x="340" y="327" text-anchor="middle" font-family="Arial" font-size="10">sendSMS()</text>
+
+  <line x1="180" y1="360" x2="500" y2="360" stroke="black" stroke-width="1.2"/>
+  <polygon points="495,356 505,360 495,364" fill="black"/>
+  <text x="340" y="352" text-anchor="middle" font-family="Arial" font-size="10">sendEmail()</text>
+
+  <line x1="500" y1="390" x2="660" y2="390" stroke="black" stroke-width="1.2"/>
+  <polygon points="655,386 665,390 655,394" fill="black"/>
+  <text x="580" y="382" text-anchor="middle" font-family="Arial" font-size="10">deliver</text>
+</svg>
