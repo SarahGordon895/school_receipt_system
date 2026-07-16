@@ -31,14 +31,10 @@ class DashboardController extends Controller
             'outstanding_students' => $studentsWithBalance->count(),
             'outstanding_total' => number_format($studentsWithBalance->sum(fn (Student $s) => $s->balance)),
             'overdue_count' => $studentsWithBalance->filter(
-                fn (Student $s) => $s->fee_due_date && $s->fee_due_date->isPast()
+                fn (Student $s) => $s->isFeeOverdue()
             )->count(),
             'due_in_14_days' => $studentsWithBalance->filter(function (Student $s) {
-                if (! $s->fee_due_date) {
-                    return false;
-                }
-
-                return now()->startOfDay()->diffInDays($s->fee_due_date->startOfDay(), false) === 14;
+                return now()->startOfDay()->diffInDays($s->resolveFeeDueDate()->startOfDay(), false) === 14;
             })->count(),
         ];
 

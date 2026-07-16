@@ -39,12 +39,23 @@ class SettingController extends Controller
             'bank_nmb_account_number' => ['nullable', 'string', 'max:32'],
             'bank_crdb_account_name' => ['nullable', 'string', 'max:255'],
             'bank_crdb_account_number' => ['nullable', 'string', 'max:32'],
+            'fee_installment_day' => ['nullable', 'integer', 'min:1', 'max:28'],
+            'fee_installment_months' => ['nullable', 'array', 'min:1'],
+            'fee_installment_months.*' => ['integer', 'min:1', 'max:12'],
         ]);
 
         $setting = Setting::firstOrCreate([]);
 
         $data['sms_enabled'] = $request->boolean('sms_enabled');
         $data['sms_simulate'] = $request->boolean('sms_simulate');
+        $data['fee_installment_day'] = (int) ($data['fee_installment_day'] ?? 15);
+        $months = collect($data['fee_installment_months'] ?? [1, 6, 9])
+            ->map(fn ($m) => (int) $m)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+        $data['fee_installment_months'] = $months !== [] ? $months : [1, 6, 9];
         if (! empty($data['sms_sender_id'])) {
             $data['sms_sender_id'] = strtoupper($data['sms_sender_id']);
         }

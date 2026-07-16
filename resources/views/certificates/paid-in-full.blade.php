@@ -74,12 +74,10 @@
             <td>{{ \Carbon\Carbon::parse($lastPayment->payment_date)->format('d/m/Y') }} — Receipt {{ $lastPayment->receipt_no }} (Tsh {{ format_tzs($lastPayment->amount) }})</td>
         </tr>
         @endif
-        @if($student->fee_due_date)
         <tr>
-            <th>Fee due date (on record)</th>
-            <td>{{ $student->fee_due_date->format('d/m/Y') }}</td>
+            <th>Next school fee due</th>
+            <td>{{ $student->resolveFeeDueDate()->format('d/m/Y') }}</td>
         </tr>
-        @endif
     </table>
 
     @if($student->feeStructures->isNotEmpty())

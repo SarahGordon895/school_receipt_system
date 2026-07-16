@@ -88,12 +88,10 @@
         <label for="message_type" class="form-label">Event template</label>
         <select name="message_type" id="message_type" class="form-select">
           <option value="">Auto (match each student's stage)</option>
-          <option value="fee_reminder_14">14 days before due</option>
-          <option value="fee_reminder_7">7 days before due</option>
-          <option value="fee_reminder_3">3 days before due</option>
-          <option value="fee_reminder_due">Due today</option>
-          <option value="overdue">Overdue</option>
-          <option value="fee_reminder">General fee reminder</option>
+          @foreach(\App\Services\NotificationTemplateService::manualSendEventTypes() as $type)
+            @continue($type === 'payment_received')
+            <option value="{{ $type }}">{{ app(\App\Services\NotificationTemplateService::class)->eventLabel($type) }}</option>
+          @endforeach
         </select>
       </div>
       <div class="col-md-4">
@@ -155,7 +153,7 @@
               <td class="text-end">Tsh {{ format_tzs($row['expected']) }}</td>
               <td class="text-end">Tsh {{ format_tzs($row['paid']) }}</td>
               <td class="text-end fw-semibold text-danger">Tsh {{ format_tzs($row['balance']) }}</td>
-              <td>{{ $row['student']->fee_due_date?->format('d/m/Y') ?? 'Not set' }}</td>
+              <td>{{ $row['student']->resolveFeeDueDate()->format('d/m/Y') }}</td>
               <td>
                 @if($row['is_overdue'])
                   <span class="badge text-bg-danger">{{ $row['milestone'] }}</span>

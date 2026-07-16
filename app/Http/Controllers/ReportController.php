@@ -45,7 +45,7 @@ class ReportController extends Controller
             'outstanding' => $withBalance->sum(fn (Student $s) => $s->balance),
             'unpaid_count' => $withBalance->count(),
             'fully_paid' => $students->filter(fn (Student $s) => $s->isFullyPaid())->count(),
-            'overdue' => $withBalance->filter(fn (Student $s) => $s->fee_due_date && $s->fee_due_date->isPast())->count(),
+            'overdue' => $withBalance->filter(fn (Student $s) => $s->isFeeOverdue())->count(),
         ];
 
         return view('reports.index', compact('categories', 'bursarSummary'));
@@ -346,13 +346,11 @@ class ReportController extends Controller
             ->with(['feeStructures', 'parentUser', 'primaryParentLink'])
             ->withSum('receipts', 'amount')
             ->when($classFilter !== '', fn ($q) => $q->where('class_name', 'like', '%'.$classFilter.'%'))
-            ->orderBy('fee_due_date')
             ->orderBy('name')
             ->get()
             ->map(function (Student $student) {
-                $daysUntilDue = $student->fee_due_date
-                    ? now()->startOfDay()->diffInDays($student->fee_due_date->startOfDay(), false)
-                    : null;
+                $dueDate = $student->resolveFeeDueDate();
+                $daysUntilDue = now()->startOfDay()->diffInDays($dueDate->copy()->startOfDay(), false);
 
                 return [
                     'student' => $student,
@@ -360,11 +358,12 @@ class ReportController extends Controller
                     'paid' => $student->paid_amount,
                     'balance' => $student->balance,
                     'days_until_due' => $daysUntilDue,
-                    'is_overdue' => $student->fee_due_date && $student->fee_due_date->isPast() && $student->balance > 0,
+                    'is_overdue' => $student->isFeeOverdue(),
                     'milestone' => $this->resolveMilestoneLabel($student, $daysUntilDue),
                 ];
             })
             ->filter(fn ($row) => $row['balance'] > 0)
+            ->sortBy('days_until_due')
             ->values();
 
         $summary = [

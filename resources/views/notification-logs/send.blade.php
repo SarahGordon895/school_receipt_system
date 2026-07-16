@@ -10,13 +10,14 @@
 @php
     $maxBatch = $maxBatchParents ?? 5;
     $minBatch = $minBatchParents ?? 1;
-    $oldSelected = collect(old('student_ids', $selectedStudentId ? [$selectedStudentId] : []))->map(fn ($id) => (int) $id)->all();
+    $oldSelected = collect(old('parent_user_ids', $selectedParentId ? [$selectedParentId] : []))->map(fn ($id) => (int) $id)->all();
 @endphp
 
 <div class="alert alert-info mb-3">
   <i class="bi bi-info-circle me-2"></i>
-  <strong>Manual send:</strong> pick the <strong>event template</strong>, select <strong>{{ $minBatch }} to {{ $maxBatch }} parents only</strong> (not all), choose <strong>SMS</strong> and/or <strong>email</strong>, then send.
-  Daily automation at 06:00 still runs separately for all eligible parents.
+  <strong>Manual send:</strong> choose the <strong>event template</strong> (recommended by fee status), select
+  <strong>{{ $minBatch }} to {{ $maxBatch }} parents</strong>, then send by <strong>SMS</strong> and/or <strong>email</strong>.
+  Newly registered parents appear here automatically after student admission.
 </div>
 
 <div class="card">
@@ -26,26 +27,32 @@
             @csrf
 
             <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="message_type" class="form-label">Event / message type</label>
+                <div class="col-md-7">
+                    <label for="message_type" class="form-label">Event / message template</label>
                     <select name="message_type" id="message_type" class="form-select @error('message_type') is-invalid @enderror" required>
                         @foreach($eventTypes as $type)
-                            <option value="{{ $type }}" @selected(old('message_type', $selectedMessageType ?? 'fee_reminder_14') === $type)>
+                            <option value="{{ $type }}"
+                                @selected(old('message_type', $selectedMessageType ?? 'auto') === $type)
+                                data-recommended="{{ $loop->iteration === 2 ? '1' : '0' }}">
                                 {{ $eventLabels[$type] ?? $type }}
+                                @if($type !== 'auto' && $loop->iteration === 2) — recommended @endif
                             </option>
                         @endforeach
                     </select>
                     @error('message_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <div class="form-text" id="template-hint">
+                        Templates are listed by event. The first status-based option matches the selected parent’s fee balance.
+                    </div>
                 </div>
 
-                <div class="col-md-6 d-flex align-items-end flex-wrap gap-3">
+                <div class="col-md-5 d-flex align-items-end flex-wrap gap-3">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="filter_unpaid_only" checked>
-                        <label class="form-check-label" for="filter_unpaid_only">Show only students with balance</label>
+                        <label class="form-check-label" for="filter_unpaid_only">Show unpaid only</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="select_eligible">
-                        <label class="form-check-label" for="select_eligible">Match reminder stage (14/7/3/0/overdue)</label>
+                        <input class="form-check-input" type="checkbox" id="filter_match_template" checked>
+                        <label class="form-check-label" for="filter_match_template">Match selected template status</label>
                     </div>
                 </div>
 
@@ -53,7 +60,7 @@
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                         <label class="form-label mb-0">
                             Select parents
-                            <span class="text-muted" id="student-count">({{ $students->count() }} with contact)</span>
+                            <span class="text-muted" id="parent-count">({{ $parents->count() }} registered)</span>
                         </label>
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge text-bg-primary" id="selection-counter">0 / {{ $maxBatch }} selected</span>
@@ -61,43 +68,59 @@
                         </div>
                     </div>
 
-                    <div class="border rounded p-2 bg-light" style="max-height: 22rem; overflow-y: auto;" id="student-picker">
-                        @foreach($students as $student)
+                    <div class="border rounded p-2 bg-light" style="max-height: 24rem; overflow-y: auto;" id="parent-picker">
+                        @forelse($parents as $row)
                             @php
-                                $daysUntil = $student->fee_due_date
-                                    ? now()->startOfDay()->diffInDays($student->fee_due_date->startOfDay(), false)
-                                    : null;
-                                $isOverdue = $student->fee_due_date && $student->fee_due_date->isPast() && $student->balance > 0;
+                                $parent = $row['parent'];
+                                $focus = $row['focus_student'];
                             @endphp
-                            <div class="form-check student-row py-1 border-bottom"
-                                data-balance="{{ $student->balance }}"
-                                data-due="{{ $student->fee_due_date?->format('d/m/Y') }}"
-                                data-days="{{ $daysUntil }}"
-                                data-overdue="{{ $isOverdue ? '1' : '0' }}"
-                                data-name="{{ $student->name }}">
-                                <input class="form-check-input student-checkbox" type="checkbox"
-                                    name="student_ids[]" value="{{ $student->id }}" id="student_{{ $student->id }}"
-                                    @checked(in_array($student->id, $oldSelected, true))>
-                                <label class="form-check-label w-100" for="student_{{ $student->id }}">
-                                    <span class="fw-semibold">{{ $student->name }}</span>
-                                    @if($student->admission_no)
-                                        <span class="text-muted">({{ $student->admission_no }})</span>
+                            <div class="form-check parent-row py-2 border-bottom"
+                                data-balance="{{ $row['balance'] }}"
+                                data-due="{{ $row['due_date'] }}"
+                                data-days="{{ $row['days_until'] }}"
+                                data-event-type="{{ $row['suggested_type'] }}"
+                                data-parent-name="{{ $parent->name }}"
+                                data-student-name="{{ $focus?->name }}">
+                                <input class="form-check-input parent-checkbox" type="checkbox"
+                                    name="parent_user_ids[]" value="{{ $parent->id }}" id="parent_{{ $parent->id }}"
+                                    @checked(in_array((int) $parent->id, $oldSelected, true))>
+                                <label class="form-check-label w-100" for="parent_{{ $parent->id }}">
+                                    <div class="d-flex flex-wrap justify-content-between gap-2">
+                                        <div>
+                                            <span class="fw-semibold">{{ $parent->name }}</span>
+                                            <span class="text-muted small">
+                                                — {{ $parent->phone ?: 'No phone' }}
+                                                @if($parent->email)
+                                                    · {{ $parent->email }}
+                                                @endif
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="badge text-bg-{{ $row['suggested_type'] === 'overdue' ? 'danger' : ($row['balance'] <= 0 ? 'success' : 'warning') }}">
+                                                {{ $row['suggested_label'] }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    @if($focus)
+                                        <div class="small text-muted mt-1">
+                                            Student: <strong>{{ $focus->name }}</strong>
+                                            @if($focus->admission_no) ({{ $focus->admission_no }}) @endif
+                                            — {{ $focus->class_name ?? 'Class N/A' }}
+                                            — Balance Tsh {{ format_tzs($row['balance']) }}
+                                            — Due {{ $row['due_date'] }}
+                                        </div>
                                     @endif
-                                    — {{ $student->class_name ?? 'Class N/A' }}
-                                    — Balance Tsh {{ format_tzs($student->balance) }}
-                                    @if($student->balance <= 0)
-                                        <span class="badge text-bg-success">Paid</span>
-                                    @elseif($isOverdue)
-                                        <span class="badge text-bg-danger">Overdue</span>
-                                    @elseif($daysUntil !== null)
-                                        <span class="badge text-bg-warning">{{ $daysUntil }}d</span>
+                                    @if($row['students']->count() > 1)
+                                        <div class="small text-muted">Also linked: {{ $row['students']->pluck('name')->join(', ') }}</div>
                                     @endif
                                 </label>
                             </div>
-                        @endforeach
+                        @empty
+                            <div class="p-3 text-muted">No registered parents with contact details yet. Admit a student with a parent account to populate this list.</div>
+                        @endforelse
                     </div>
-                    @error('student_ids')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                    <div class="form-text">Choose {{ $minBatch }}–{{ $maxBatch }} parents only. You cannot select all at once.</div>
+                    @error('parent_user_ids')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                    <div class="form-text">Choose {{ $minBatch }}–{{ $maxBatch }} parents only. Overdue and near-due parents are listed first.</div>
                 </div>
 
                 <div class="col-12">
@@ -112,9 +135,20 @@
                     </div>
                 </div>
 
-                <div class="col-12">
+                <div class="col-md-6">
                     <label class="form-label">Template preview</label>
-                    <div id="template-preview" class="border rounded p-3 bg-light small"></div>
+                    <div id="template-preview" class="border rounded p-3 bg-light small" style="min-height: 6rem;"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">All event templates</label>
+                    <div class="border rounded p-2 bg-white small" style="max-height: 12rem; overflow-y: auto;">
+                        @foreach($templateCatalog as $type => $item)
+                            <div class="mb-2 pb-2 border-bottom">
+                                <div class="fw-semibold">{{ $item['label'] }}</div>
+                                <div class="text-muted">{{ $item['body'] }}</div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
 
@@ -131,25 +165,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const messageType = document.getElementById('message_type');
     const templatePreview = document.getElementById('template-preview');
     const filterUnpaid = document.getElementById('filter_unpaid_only');
-    const selectEligible = document.getElementById('select_eligible');
+    const filterMatch = document.getElementById('filter_match_template');
     const form = document.getElementById('send-reminder-form');
     const templates = @json($templates);
     const maxBatch = {{ $maxBatch }};
     const minBatch = {{ $minBatch }};
-    const rows = Array.from(document.querySelectorAll('.student-row'));
-    const checkboxes = Array.from(document.querySelectorAll('.student-checkbox'));
+    const rows = Array.from(document.querySelectorAll('.parent-row'));
+    const checkboxes = Array.from(document.querySelectorAll('.parent-checkbox'));
     const counter = document.getElementById('selection-counter');
-
-    const milestoneDays = {
-        fee_reminder_14: 14,
-        fee_reminder_7: 7,
-        fee_reminder_3: 3,
-        fee_reminder_due: 0,
-        overdue: -1
-    };
+    let userPickedTemplate = {{ old('message_type', request()->query('message_type')) ? 'true' : 'false' }};
 
     function selectedCount() {
         return checkboxes.filter(cb => cb.checked).length;
+    }
+
+    function selectedRows() {
+        return checkboxes.filter(cb => cb.checked).map(cb => cb.closest('.parent-row'));
     }
 
     function updateCounter() {
@@ -157,58 +188,86 @@ document.addEventListener('DOMContentLoaded', function () {
         counter.textContent = count + ' / ' + maxBatch + ' selected';
         counter.className = 'badge ' + (count >= maxBatch ? 'text-bg-warning' : 'text-bg-primary');
         checkboxes.forEach(cb => {
-            if (!cb.checked) {
-                cb.disabled = count >= maxBatch;
-            } else {
-                cb.disabled = false;
-            }
+            cb.disabled = !cb.checked && count >= maxBatch;
         });
     }
 
-    function eligibleForType(row, type) {
-        if (type === 'payment_received') return true;
-        if (Number(row.dataset.balance || 0) <= 0) return false;
-        if (type === 'overdue') return row.dataset.overdue === '1';
-        if (type === 'fee_reminder') return Number(row.dataset.balance || 0) > 0;
-        const days = milestoneDays[type];
-        if (days === undefined) return true;
-        return Number(row.dataset.days) === days;
+    function reorderTemplateOptions(suggestedType) {
+        if (!suggestedType || userPickedTemplate) return;
+        const options = Array.from(messageType.options);
+        const auto = options.find(o => o.value === 'auto');
+        const suggested = options.find(o => o.value === suggestedType);
+        const rest = options.filter(o => o.value !== 'auto' && o.value !== suggestedType);
+
+        messageType.innerHTML = '';
+        if (auto) messageType.appendChild(auto);
+        if (suggested) {
+            suggested.textContent = suggested.textContent.replace(/\s— recommended$/, '') + ' — recommended';
+            messageType.appendChild(suggested);
+        }
+        rest.forEach(o => {
+            o.textContent = o.textContent.replace(/\s— recommended$/, '');
+            messageType.appendChild(o);
+        });
+        messageType.value = suggestedType || 'auto';
     }
 
-    function filterStudents() {
+    function syncTemplateFromSelection() {
+        const selected = selectedRows();
+        if (selected.length === 0) {
+            updatePreview();
+            return;
+        }
+        const suggested = selected[0].dataset.eventType;
+        reorderTemplateOptions(suggested);
+        updatePreview();
+        filterParents();
+    }
+
+    function eligibleForType(row, type) {
+        if (type === 'auto' || type === 'payment_received') return true;
+        return row.dataset.eventType === type;
+    }
+
+    function filterParents() {
         const type = messageType.value;
         let visible = 0;
         rows.forEach(function (row) {
             let show = true;
             if (filterUnpaid.checked && Number(row.dataset.balance || 0) <= 0) show = false;
-            if (show && selectEligible.checked) show = eligibleForType(row, type);
+            if (show && filterMatch.checked && type !== 'auto') show = eligibleForType(row, type);
             row.style.display = show ? '' : 'none';
             if (!show) {
-                const cb = row.querySelector('.student-checkbox');
+                const cb = row.querySelector('.parent-checkbox');
                 if (cb && cb.checked) cb.checked = false;
             }
             if (show) visible++;
         });
-        document.getElementById('student-count').textContent = '(' + visible + ' visible)';
+        document.getElementById('parent-count').textContent = '(' + visible + ' visible)';
         updateCounter();
         updatePreview();
     }
 
     function updatePreview() {
-        const type = messageType.value;
-        const checked = checkboxes.find(cb => cb.checked);
-        const row = checked ? checked.closest('.student-row') : null;
+        const type = messageType.value === 'auto'
+            ? (selectedRows()[0]?.dataset.eventType || 'fee_reminder')
+            : messageType.value;
+        const row = selectedRows()[0] || null;
         let template = templates[type] || '';
         if (row) {
             template = template
-                .replaceAll('{student_name}', row.dataset.name || '')
+                .replaceAll('{student_name}', row.dataset.studentName || '')
+                .replaceAll('{parent_name}', row.dataset.parentName || '')
                 .replaceAll('{balance}', Number(row.dataset.balance || 0).toLocaleString())
                 .replaceAll('{due_date}', row.dataset.due || 'N/A')
                 .replaceAll('{days_until_due}', row.dataset.days || 'N/A')
                 .replaceAll('{amount}', '0')
                 .replaceAll('{receipt_no}', 'MANUAL');
         }
-        templatePreview.textContent = template;
+        templatePreview.textContent = template || 'Select an event template to preview.';
+        document.getElementById('template-hint').textContent = messageType.value === 'auto'
+            ? 'Auto sends each parent the template that matches their student fee status.'
+            : 'Using template: ' + (messageType.options[messageType.selectedIndex]?.text || type);
     }
 
     checkboxes.forEach(cb => {
@@ -218,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 alert('Maximum ' + maxBatch + ' parents per send.');
             }
             updateCounter();
-            updatePreview();
+            syncTemplateFromSelection();
         });
     });
 
@@ -228,10 +287,14 @@ document.addEventListener('DOMContentLoaded', function () {
         updatePreview();
     });
 
-    messageType.addEventListener('change', filterStudents);
-    filterUnpaid.addEventListener('change', filterStudents);
-    selectEligible.addEventListener('change', filterStudents);
-    filterStudents();
+    messageType.addEventListener('change', function () {
+        userPickedTemplate = true;
+        filterParents();
+    });
+    filterUnpaid.addEventListener('change', filterParents);
+    filterMatch.addEventListener('change', filterParents);
+    filterParents();
+    if (selectedCount() > 0) syncTemplateFromSelection();
 
     form.addEventListener('submit', function (event) {
         const count = selectedCount();

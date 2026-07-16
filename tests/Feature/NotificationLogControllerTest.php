@@ -158,7 +158,6 @@ class NotificationLogControllerTest extends TestCase
             'name' => 'Resend Student',
             'parent_email' => $parent->email,
             'parent_phone' => '+255700000005',
-            'fee_due_date' => now()->addDays(5)->toDateString(),
         ]);
 
         $failedLog = NotificationLog::create([
@@ -182,7 +181,8 @@ class NotificationLogControllerTest extends TestCase
 
         $failedLog->refresh();
         $this->assertSame('sent', $failedLog->status);
-        $this->assertStringContainsString('Resent Fee reminder', (string) $failedLog->message);
+        $this->assertStringContainsString('Resent ', (string) $failedLog->message);
+        $this->assertStringContainsString('SMS to +255700000005', (string) $failedLog->message);
     }
 
     public function test_resend_rejects_already_sent_logs(): void

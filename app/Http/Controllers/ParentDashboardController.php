@@ -26,12 +26,11 @@ class ParentDashboardController extends Controller
             'balance_total' => $students->sum(fn ($s) => $s->balance),
             'due_soon_count' => $students->filter(function ($s) {
                 return $s->balance > 0
-                    && $s->fee_due_date
-                    && $s->fee_due_date->isFuture()
-                    && $s->fee_due_date->lte(now()->addDays(7));
+                    && $s->resolveFeeDueDate()->isFuture()
+                    && $s->resolveFeeDueDate()->lte(now()->addDays(7));
             })->count(),
             'overdue_count' => $students->filter(
-                fn ($s) => $s->balance > 0 && $s->fee_due_date && $s->fee_due_date->isPast()
+                fn ($s) => $s->balance > 0 && $s->isFeeOverdue()
             )->count(),
         ];
 

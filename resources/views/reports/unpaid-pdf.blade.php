@@ -58,7 +58,7 @@
                 <td class="amount">Tsh {{ format_tzs($row['expected']) }}</td>
                 <td class="amount">Tsh {{ format_tzs($row['paid']) }}</td>
                 <td class="amount">Tsh {{ format_tzs($row['balance']) }}</td>
-                <td>{{ $row['student']->fee_due_date?->format('d/m/Y') ?? '—' }}</td>
+                <td>{{ $row['student']->resolveFeeDueDate()->format('d/m/Y') }}</td>
                 <td>{{ $row['milestone'] }}</td>
             </tr>
             @empty

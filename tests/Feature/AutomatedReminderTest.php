@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\NotificationLog;
+use App\Models\Receipt;
+use App\Models\Setting;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\NotificationTemplateService;
@@ -10,6 +12,7 @@ use App\Services\ParentReminderService;
 use App\Services\SmsSendResult;
 use App\Services\SmsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Mockery;
 use Tests\Support\AdmitsStudents;
@@ -20,8 +23,24 @@ class AutomatedReminderTest extends TestCase
     use AdmitsStudents;
     use RefreshDatabase;
 
-    public function test_automation_sends_14_day_reminder_on_exact_due_date_match(): void
+    protected function tearDown(): void
     {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
+
+    public function test_automation_sends_14_day_reminder_on_school_schedule(): void
+    {
+        Setting::query()->create([
+            'school_name' => 'Test School',
+            'fee_installment_day' => 15,
+            'fee_installment_months' => [1, 6, 9],
+        ]);
+        Setting::forgetCache();
+
+        // 14 days before 15 June → 1 June
+        Carbon::setTestNow(Carbon::create(2026, 6, 1, 8, 0, 0));
+
         $parent = User::factory()->create([
             'role' => 'parent',
             'phone' => '+255700000099',
@@ -31,9 +50,18 @@ class AutomatedReminderTest extends TestCase
         $student = $this->admitStudentForParent($parent, [
             'name' => 'Two Week Student',
             'admission_no' => 'ADM-14D',
-            'fee_due_date' => now()->addDays(14)->toDateString(),
-            'expected_total_fee' => 400_000,
+            'expected_total_fee' => 300_000,
             'parent_phone' => '+255700000099',
+        ]);
+
+        // Already paid the January third so only the June installment is outstanding.
+        \App\Models\Receipt::create([
+            'student_id' => $student->id,
+            'student_name' => $student->name,
+            'amount' => 100_000,
+            'payment_date' => '2026-01-20',
+            'payment_mode' => 'Cash',
+            'user_id' => User::factory()->create(['role' => 'school_admin'])->id,
         ]);
 
         $sms = Mockery::mock(SmsService::class);
@@ -56,13 +84,30 @@ class AutomatedReminderTest extends TestCase
     {
         Mail::fake();
 
+        Setting::query()->create([
+            'school_name' => 'Test School',
+            'fee_installment_day' => 15,
+            'fee_installment_months' => [1, 6, 9],
+        ]);
+        Setting::forgetCache();
+
+        Carbon::setTestNow(Carbon::create(2026, 6, 1, 8, 0, 0));
+
         $parent = User::factory()->create(['role' => 'parent', 'phone' => '+255700000088']);
 
         $student = $this->admitStudentForParent($parent, [
             'name' => 'Dedup Student',
-            'fee_due_date' => now()->addDays(14)->toDateString(),
-            'expected_total_fee' => 200_000,
+            'expected_total_fee' => 300_000,
             'parent_phone' => '+255700000088',
+        ]);
+
+        \App\Models\Receipt::create([
+            'student_id' => $student->id,
+            'student_name' => $student->name,
+            'amount' => 100_000,
+            'payment_date' => '2026-01-20',
+            'payment_mode' => 'Cash',
+            'user_id' => User::factory()->create(['role' => 'school_admin'])->id,
         ]);
 
         NotificationLog::create([

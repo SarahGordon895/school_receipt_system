@@ -28,6 +28,8 @@ class Setting extends Model
         'bank_nmb_account_number',
         'bank_crdb_account_name',
         'bank_crdb_account_number',
+        'fee_installment_day',
+        'fee_installment_months',
     ];
 
     protected function casts(): array
@@ -35,6 +37,8 @@ class Setting extends Model
         return [
             'sms_enabled' => 'boolean',
             'sms_simulate' => 'boolean',
+            'fee_installment_day' => 'integer',
+            'fee_installment_months' => 'array',
         ];
     }
 

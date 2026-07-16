@@ -209,7 +209,8 @@ class DemoDataSeeder extends Seeder
                 'class_name' => 'Form II',
                 'parent_key' => 'gordon',
                 'fee_due_date' => now()->addDays(21),
-                'payment_tier' => 'full',
+                // Keep outstanding balance so bank-upload demo can auto-verify.
+                'payment_tier' => 'partial_good',
             ],
             [
                 'admission_no' => 'MBN-2024-003',

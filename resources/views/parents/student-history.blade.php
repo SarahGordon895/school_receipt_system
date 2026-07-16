@@ -64,7 +64,7 @@
     <div class="card h-100">
       <div class="card-body">
         <div class="small text-muted">Fee due date</div>
-        <div class="fw-semibold">{{ $student->fee_due_date?->format('Y-m-d') ?? 'Not set' }}</div>
+        <div class="fw-semibold">{{ $student->resolveFeeDueDate()->format('Y-m-d') }}</div>
       </div>
     </div>
   </div>

@@ -23,7 +23,7 @@ class FeeReminderNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $balance = number_format($this->student->balance);
-        $dueDate = $this->student->fee_due_date?->format('Y-m-d') ?? 'as soon as possible';
+        $dueDate = $this->student->resolveFeeDueDate()->format('Y-m-d');
 
         return (new MailMessage)
             ->subject('School Fee Reminder - ' . $this->student->name)

@@ -28,12 +28,13 @@
         </div>
         @include('students.partials.parent-fields', ['student' => $student])
         <div class="col-md-6">
-          <label class="form-label">Fee Due Date</label>
-          <input type="date" class="form-control" name="fee_due_date" value="{{ old('fee_due_date',optional($student->fee_due_date)->format('Y-m-d')) }}">
-        </div>
-        <div class="col-md-6">
           <label class="form-label">Expected Total Fee (TZS)</label>
           <input type="number" min="0" class="form-control" name="expected_total_fee" value="{{ old('expected_total_fee',$student->expected_total_fee) }}">
+          <div class="form-text">
+            Next school fee due:
+            <strong>{{ $student->resolveFeeDueDate()->format('d M Y') }}</strong>
+            ({{ app(\App\Services\FeeScheduleService::class)->summary() }}).
+          </div>
         </div>
         <div class="col-12">
           <label class="form-label">Assign Fee Structures</label>

@@ -2,12 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Mail\ParentWelcomeMailable;
 use App\Models\NotificationLog;
 use App\Models\Receipt;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\SmsService;
 use App\Support\ParentStudentAdmission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
+use Mockery;
 use Tests\Support\AdmitsStudents;
 use Tests\TestCase;
 
@@ -81,10 +85,15 @@ class ParentPortalScopeTest extends TestCase
         $admin = User::factory()->create(['role' => 'school_admin']);
         $parent = User::factory()->create(['role' => 'parent', 'email' => 'newparent@test.com']);
 
+        $sms = Mockery::mock(SmsService::class);
+        $sms->shouldReceive('send')->andReturn(\App\Services\SmsSendResult::skipped('test'));
+        $this->app->instance(SmsService::class, $sms);
+
         $this->actingAs($admin)->post(route('students.store'), [
             'name' => 'New Admit',
             'admission_no' => 'NEW-001',
             'class_name' => 'Form I',
+            'parent_mode' => 'existing',
             'parent_user_id' => $parent->id,
             'parent_relationship' => 'Mother',
             'parent_phone' => '+255711111111',
@@ -101,6 +110,54 @@ class ParentPortalScopeTest extends TestCase
             'relationship' => 'Mother',
             'is_primary' => true,
         ]);
+    }
+
+    public function test_student_store_can_create_new_parent_account(): void
+    {
+        $admin = User::factory()->create(['role' => 'school_admin']);
+        Mail::fake();
+
+        $sms = Mockery::mock(SmsService::class);
+        $sms->shouldReceive('send')->andReturn(\App\Services\SmsSendResult::skipped('test'));
+        $this->app->instance(SmsService::class, $sms);
+
+        $this->actingAs($admin)->post(route('students.store'), [
+            'name' => 'Brand New Child',
+            'admission_no' => 'NEW-PARENT-001',
+            'class_name' => 'Form II',
+            'parent_mode' => 'new',
+            'parent_relationship' => 'Father',
+            'parent_name' => 'Fresh Guardian',
+            'parent_phone' => '+255700123456',
+            'parent_email' => 'fresh.guardian@example.com',
+            'portal_login_email' => 'fresh.guardian@example.com',
+            'parent_password' => 'Password1!',
+            'parent_password_confirmation' => 'Password1!',
+            'expected_total_fee' => 75000,
+        ])->assertRedirect(route('students.index'));
+
+        $parent = User::query()->where('email', 'fresh.guardian@example.com')->first();
+        $this->assertNotNull($parent);
+        $this->assertSame('parent', $parent->role);
+        $this->assertSame('Fresh Guardian', $parent->name);
+        $this->assertSame('+255700123456', $parent->phone);
+
+        $student = Student::where('admission_no', 'NEW-PARENT-001')->first();
+        $this->assertNotNull($student);
+        $this->assertTrue(ParentStudentAdmission::parentOwnsStudent($parent, $student));
+        $this->assertDatabaseHas('student_parent_links', [
+            'student_id' => $student->id,
+            'parent_user_id' => $parent->id,
+            'relationship' => 'Father',
+            'is_primary' => true,
+        ]);
+
+        Mail::assertSent(ParentWelcomeMailable::class, function (ParentWelcomeMailable $mail) use ($parent, $student) {
+            return $mail->hasTo('fresh.guardian@example.com')
+                && $mail->parent->is($parent)
+                && $mail->student->is($student)
+                && $mail->temporaryPassword === 'Password1!';
+        });
     }
 
     public function test_parent_cannot_download_clearance_for_another_parents_child(): void

@@ -6,6 +6,7 @@ use App\Mail\FeeReminderMailable;
 use App\Models\NotificationLog;
 use App\Models\Receipt;
 use App\Models\Student;
+use App\Models\User;
 use App\Notifications\PaymentReceivedNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +18,8 @@ class ParentReminderService
 {
     public function __construct(
         private SmsService $smsService,
-        private NotificationTemplateService $templates
+        private NotificationTemplateService $templates,
+        private FeeScheduleService $feeSchedule,
     ) {
     }
 
@@ -29,11 +31,19 @@ class ParentReminderService
     public function runAutomatedReminders(): array
     {
         $counts = ['email' => 0, 'sms' => 0, 'milestones' => []];
+        $activeDue = $this->feeSchedule->activeDueDate();
 
         foreach (NotificationTemplateService::REMINDER_MILESTONES as $daysBefore) {
             $eventType = $this->templates->eventTypeForMilestone($daysBefore);
-            $dueDate = now()->addDays($daysBefore)->toDateString();
-            $milestoneCounts = $this->sendMilestoneReminders($dueDate, $eventType);
+            $targetDate = now()->addDays($daysBefore)->startOfDay();
+
+            if (! $activeDue->equalTo($targetDate)) {
+                $counts['milestones'][$eventType] = 0;
+
+                continue;
+            }
+
+            $milestoneCounts = $this->sendMilestoneReminders($activeDue, $eventType);
             $counts['email'] += $milestoneCounts['email'];
             $counts['sms'] += $milestoneCounts['sms'];
             $counts['milestones'][$eventType] = $milestoneCounts['sms'] + $milestoneCounts['email'];
@@ -52,8 +62,15 @@ class ParentReminderService
      */
     public function sendScheduledReminders(int $days = 3): array
     {
+        $activeDue = $this->feeSchedule->activeDueDate();
+        $targetDate = now()->addDays(max(0, $days))->startOfDay();
+
+        if (! $activeDue->equalTo($targetDate)) {
+            return ['email' => 0, 'sms' => 0];
+        }
+
         return $this->sendMilestoneReminders(
-            now()->addDays(max(0, $days))->toDateString(),
+            $activeDue,
             $this->templates->eventTypeForMilestone(max(0, $days))
         );
     }
@@ -74,21 +91,25 @@ class ParentReminderService
     /**
      * @return array{email: int, sms: int}
      */
-    private function sendMilestoneReminders(string $dueDate, string $eventType): array
+    private function sendMilestoneReminders(\Illuminate\Support\Carbon $dueDate, string $eventType): array
     {
         $students = Student::query()
             ->withSum('receipts', 'amount')
-            ->with(['parentUser', 'primaryParentLink'])
-            ->whereNotNull('fee_due_date')
-            ->whereDate('fee_due_date', $dueDate)
+            ->with(['feeStructures', 'parentUser', 'primaryParentLink'])
             ->get()
-            ->filter(fn (Student $student) => $student->balance > 0 && $student->hasParentContact());
+            ->filter(function (Student $student) use ($dueDate) {
+                if ($student->balance <= 0 || ! $student->hasParentContact()) {
+                    return false;
+                }
+
+                return $student->paid_amount < $this->feeSchedule->cumulativeAmountDueOn($student, $dueDate);
+            });
 
         $counts = ['email' => 0, 'sms' => 0];
 
         foreach ($students as $student) {
-            $sendEmail = ! $this->alreadySentMilestone($student, 'email', $eventType) && filled($student->resolveParentEmail());
-            $sendSms = ! $this->alreadySentMilestone($student, 'sms', $eventType) && filled($student->resolveParentPhone());
+            $sendEmail = ! $this->alreadySentMilestone($student, 'email', $eventType, $dueDate) && filled($student->resolveParentEmail());
+            $sendSms = ! $this->alreadySentMilestone($student, 'sms', $eventType, $dueDate) && filled($student->resolveParentPhone());
 
             if (! $sendEmail && ! $sendSms) {
                 continue;
@@ -117,11 +138,9 @@ class ParentReminderService
 
         $students = Student::query()
             ->withSum('receipts', 'amount')
-            ->with(['parentUser', 'primaryParentLink'])
-            ->whereNotNull('fee_due_date')
-            ->whereDate('fee_due_date', '<', now()->toDateString())
+            ->with(['feeStructures', 'parentUser', 'primaryParentLink'])
             ->get()
-            ->filter(fn (Student $student) => $student->balance > 0 && $student->hasParentContact());
+            ->filter(fn (Student $student) => $this->feeSchedule->isOverdue($student) && $student->hasParentContact());
 
         $counts = ['email' => 0, 'sms' => 0];
 
@@ -220,12 +239,19 @@ class ParentReminderService
         bool $sendEmail = true,
         ?string $customSmsMessage = null,
         bool $manual = true,
-        ?string $eventType = null
+        ?string $eventType = null,
+        ?User $recipientParent = null,
     ): array {
         $student->loadMissing(['parentUser', 'primaryParentLink']);
         $student->loadSum('receipts', 'amount');
 
-        $eventType ??= $this->templates->resolveEventTypeForStudent($student);
+        if ($eventType === 'auto') {
+            $eventType = null;
+        }
+
+        $eventType ??= $manual
+            ? $this->templates->suggestManualEventTypeForStudent($student)
+            : $this->templates->resolveEventTypeForStudent($student);
 
         $results = [
             'sms' => null,
@@ -240,7 +266,9 @@ class ParentReminderService
         $prefix = $manual ? 'Manual' : 'Scheduled';
 
         if ($sendEmail) {
-            $emailTo = $student->resolveParentEmail();
+            $emailTo = filled($recipientParent?->email)
+                ? $recipientParent->email
+                : $student->resolveParentEmail();
             $results['email_to'] = $emailTo;
 
             if (! $emailTo) {
@@ -268,7 +296,9 @@ class ParentReminderService
         }
 
         if ($sendSms) {
-            $phone = $student->resolveParentPhone();
+            $phone = filled($recipientParent?->phone)
+                ? User::normalizePhone($recipientParent->phone)
+                : $student->resolveParentPhone();
             $results['sms_to'] = $phone;
 
             if (! $phone) {
@@ -315,9 +345,51 @@ class ParentReminderService
         $messages = [];
 
         foreach ($students as $student) {
-            $type = $eventType ?? $this->templates->resolveEventTypeForStudent($student);
+            $type = in_array($eventType, [null, '', 'auto'], true)
+                ? null
+                : $eventType;
             $results = $this->sendFeeReminder($student, $sendSms, $sendEmail, null, true, $type);
             $messages[] = $student->name.': '.$this->summarizeSendResults($results);
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Send to 1–5 selected parent portal accounts (uses each parent's linked student with highest urgency).
+     *
+     * @param  Collection<int, User>  $parents
+     * @return list<string>
+     */
+    public function sendBatchToParents(
+        Collection $parents,
+        bool $sendSms,
+        bool $sendEmail,
+        ?string $eventType = null
+    ): array {
+        $messages = [];
+
+        foreach ($parents as $parent) {
+            $student = $parent->admittedStudents()
+                ->with(['feeStructures', 'parentUser', 'primaryParentLink'])
+                ->withSum('receipts', 'amount')
+                ->get()
+                ->sortBy(fn (Student $student) => $this->templates->statusPriority(
+                    $this->templates->suggestManualEventTypeForStudent($student)
+                ))
+                ->first();
+
+            if (! $student) {
+                $messages[] = $parent->name.': no linked student';
+
+                continue;
+            }
+
+            $type = in_array($eventType, [null, '', 'auto'], true)
+                ? null
+                : $eventType;
+            $results = $this->sendFeeReminder($student, $sendSms, $sendEmail, null, true, $type, $parent);
+            $messages[] = $parent->name.' ('.$student->name.'): '.$this->summarizeSendResults($results);
         }
 
         return $messages;
@@ -514,13 +586,17 @@ class ParentReminderService
             ->exists();
     }
 
-    private function alreadySentMilestone(Student $student, string $channel, string $eventType): bool
+    private function alreadySentMilestone(Student $student, string $channel, string $eventType, ?\Illuminate\Support\Carbon $dueDate = null): bool
     {
         return NotificationLog::query()
             ->where('student_id', $student->id)
             ->where('channel', $channel)
             ->where('event_type', $eventType)
             ->where('status', 'sent')
+            ->when($dueDate, function ($query) use ($dueDate) {
+                $query->whereDate('sent_on', '>=', $dueDate->copy()->subDays(30)->toDateString())
+                    ->whereDate('sent_on', '<=', $dueDate->toDateString());
+            })
             ->exists();
     }
 

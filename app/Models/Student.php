@@ -120,6 +120,20 @@ class Student extends Model
         return $this->balance > 0;
     }
 
+    /**
+     * School-wide installment due date (Jan / Jun / Sep mid-month by default).
+     * Per-student fee_due_date is no longer used for reminders or status.
+     */
+    public function resolveFeeDueDate(): \Illuminate\Support\Carbon
+    {
+        return app(\App\Services\FeeScheduleService::class)->activeDueDate();
+    }
+
+    public function isFeeOverdue(): bool
+    {
+        return app(\App\Services\FeeScheduleService::class)->isOverdue($this);
+    }
+
     public function paymentStatusLabel(): string
     {
         if ($this->expected_amount <= 0) {
@@ -130,7 +144,7 @@ class Student extends Model
             return 'Fully paid';
         }
 
-        if ($this->fee_due_date && $this->fee_due_date->isPast()) {
+        if ($this->isFeeOverdue()) {
             return 'Overdue';
         }
 

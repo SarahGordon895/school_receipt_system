@@ -38,7 +38,7 @@ class FeeReminderMailable extends Mailable
             htmlString: view('emails.fee-reminder', [
                 'student' => $this->student,
                 'balance' => format_tzs($this->student->balance),
-                'dueDate' => $this->student->fee_due_date?->format('d/m/Y') ?? 'N/A',
+                'dueDate' => $this->student->resolveFeeDueDate()->format('d/m/Y'),
                 'message' => $message,
                 'eventLabel' => $templates->eventLabel($this->eventType),
             ])->render(),

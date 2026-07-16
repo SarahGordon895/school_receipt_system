@@ -11,6 +11,24 @@ use InvalidArgumentException;
 class ParentStudentAdmission
 {
     /**
+     * Create a new parent portal account for admission.
+     */
+    public static function createParentAccount(
+        string $name,
+        string $email,
+        string $phone,
+        string $password,
+    ): User {
+        return User::query()->create([
+            'name' => $name,
+            'email' => strtolower($email),
+            'phone' => User::normalizePhone($phone),
+            'password' => $password,
+            'role' => 'parent',
+        ]);
+    }
+
+    /**
      * Official school admission link between a registered student and parent portal account.
      */
     public static function linkGuardian(

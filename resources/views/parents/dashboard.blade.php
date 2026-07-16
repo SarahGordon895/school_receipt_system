@@ -124,7 +124,7 @@
         </div>
         <div class="col-md-3">
           <div class="small text-muted">Fee due date</div>
-          <div class="fw-semibold">{{ $student->fee_due_date?->format('Y-m-d') ?? 'Not set' }}</div>
+          <div class="fw-semibold">{{ $student->resolveFeeDueDate()->format('Y-m-d') }}</div>
         </div>
       </div>
 

@@ -115,6 +115,40 @@
 
       <hr class="my-4">
 
+      <h6 class="fw-semibold text-school-primary mb-3"><i class="bi bi-calendar3 me-2"></i>School Fee Payment Schedule</h6>
+      <p class="small text-muted">
+        Fees are due on a fixed school calendar (not per student). Default is mid-month in January, June, and September.
+        Reminders (14 / 7 / 3 days before, due day, and overdue) use these dates for every student.
+      </p>
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="form-floating">
+            <input type="number" min="1" max="28" class="form-control" id="fee_installment_day" name="fee_installment_day"
+              value="{{ old('fee_installment_day', $setting->fee_installment_day ?? 15) }}" placeholder="15">
+            <label for="fee_installment_day">Due day of month (e.g. 15 = mid-month)</label>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Installment months</label>
+          <div class="d-flex flex-wrap gap-3">
+            @php
+              $selectedMonths = collect(old('fee_installment_months', $setting->fee_installment_months ?? [1, 6, 9]))->map(fn ($m) => (int) $m);
+            @endphp
+            @foreach([1=>'January',2=>'February',3=>'March',4=>'April',5=>'May',6=>'June',7=>'July',8=>'August',9=>'September',10=>'October',11=>'November',12=>'December'] as $month => $label)
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="fee_installment_months[]" value="{{ $month }}" id="fee_month_{{ $month }}"
+                  @checked($selectedMonths->contains($month))>
+                <label class="form-check-label" for="fee_month_{{ $month }}">{{ $label }}</label>
+              </div>
+            @endforeach
+          </div>
+          <div class="form-text">Current schedule: {{ app(\App\Services\FeeScheduleService::class)->summary($setting) }}</div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
       <h6 class="fw-semibold text-school-primary mb-3"><i class="bi bi-phone me-2"></i>SMS Notifications</h6>
       <p class="small text-muted">Configure SMS for payment alerts and fee reminders. Use <strong>simulate mode</strong> on localhost (messages are logged, not sent).</p>
 
