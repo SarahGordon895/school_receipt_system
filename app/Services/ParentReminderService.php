@@ -531,8 +531,8 @@ class ParentReminderService
             ];
         }
 
-        $emailOk = $this->sendFeeReminderEmail($student, $emailTo, $eventType);
         $eventType = $log->event_type ?: $this->templates->resolveEventTypeForStudent($student);
+        $emailOk = $this->sendFeeReminderEmail($student, $emailTo, $eventType);
 
         $log->update([
             'status' => $emailOk ? 'sent' : 'failed',

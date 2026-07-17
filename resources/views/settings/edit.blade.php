@@ -150,7 +150,7 @@
       <hr class="my-4">
 
       <h6 class="fw-semibold text-school-primary mb-3"><i class="bi bi-phone me-2"></i>SMS Notifications</h6>
-      <p class="small text-muted">Configure SMS for payment alerts and fee reminders. Use <strong>simulate mode</strong> on localhost (messages are logged, not sent).</p>
+      <p class="small text-muted">Configure SMS for payment alerts and fee reminders. Use <strong>simulate mode</strong> on localhost (messages are logged, not sent). Live SMS also requires credit on your iMart SMS account — an empty balance returns “Insufficient SMS balance”.</p>
 
       <div class="row g-3">
         <div class="col-md-6">

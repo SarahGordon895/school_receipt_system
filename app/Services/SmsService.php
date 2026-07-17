@@ -46,10 +46,24 @@ class SmsService
 
         $payload = $this->buildPayload($config['driver'], $recipient, $message, $sender);
 
-        $response = Http::timeout(20)
-            ->acceptJson()
-            ->withToken($token)
-            ->post($endpoint, $payload);
+        try {
+            $response = Http::timeout(20)
+                ->acceptJson()
+                ->withToken($token)
+                ->post($endpoint, $payload);
+        } catch (\Throwable $e) {
+            Log::error('SMS provider request exception.', [
+                'to' => $to,
+                'recipient' => $recipient,
+                'driver' => $config['driver'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return SmsSendResult::failed(
+                'SMS provider unreachable: '.$e->getMessage(),
+                $recipient
+            );
+        }
 
         $body = $response->json() ?? [];
         $providerStatus = strtolower((string) ($body['status'] ?? ''));
@@ -67,13 +81,13 @@ class SmsService
             ]);
 
             return SmsSendResult::failed(
-                'SMS provider rejected the request. Check sender ID ('.$sender.') and API token.',
+                $this->providerFailureMessage($body, $sender, $response->status()),
                 $recipient,
                 $uid ?: null
             );
         }
 
-        $delivery = $uid !== '' ? $this->fetchDeliveryStatus($token, $uid) : null;
+        $delivery = $uid !== '' ? $this->fetchDeliveryStatus($endpoint, $token, $uid) : null;
         $deliveryStatus = (string) ($delivery['status'] ?? 'accepted');
         $detail = 'SMS submitted to '.$recipient.' via sender '.$sender.'.';
 
@@ -107,13 +121,15 @@ class SmsService
     /** @return array{status: string, delivered_count: int, failed_count: int, detail: string}|null */
     public function checkDelivery(string $uid): ?array
     {
-        $token = $this->resolveConfig()['token'];
+        $config = $this->resolveConfig();
+        $token = $config['token'];
+        $endpoint = $config['endpoint'];
 
-        if (! $token || $uid === '') {
+        if (! $token || ! $endpoint || $uid === '') {
             return null;
         }
 
-        $delivery = $this->fetchDeliveryStatus($token, $uid, waitSeconds: 0);
+        $delivery = $this->fetchDeliveryStatus((string) $endpoint, (string) $token, $uid, waitSeconds: 0);
 
         if ($delivery === null) {
             return null;
@@ -169,10 +185,29 @@ class SmsService
         };
     }
 
-    /** @return array<string, mixed>|null */
-    private function fetchDeliveryStatus(string $token, string $uid, int $waitSeconds = 1): ?array
+    /** @param array<string, mixed> $body */
+    private function providerFailureMessage(array $body, string $sender, int $httpStatus): string
     {
-        $base = rtrim((string) config('services.sms.endpoint'), '/');
+        $providerMessage = trim((string) ($body['message'] ?? ''));
+        $providerCode = trim((string) ($body['code'] ?? ''));
+
+        if ($providerCode === 'INSUFFICIENT_SMS_BALANCE' || stripos($providerMessage, 'insufficient') !== false) {
+            return 'SMS failed: insufficient balance on the iMart SMS account. Top up the account, then retry.';
+        }
+
+        if ($providerMessage !== '') {
+            $suffix = $providerCode !== '' ? ' ('.$providerCode.')' : '';
+
+            return 'SMS provider rejected the request: '.$providerMessage.$suffix;
+        }
+
+        return 'SMS provider rejected the request (HTTP '.$httpStatus.'). Check sender ID ('.$sender.') and API token.';
+    }
+
+    /** @return array<string, mixed>|null */
+    private function fetchDeliveryStatus(string $endpoint, string $token, string $uid, int $waitSeconds = 1): ?array
+    {
+        $base = rtrim($endpoint, '/');
         $base = preg_replace('#/send$#', '', $base) ?? $base;
         $statusUrl = $base.'/'.$uid;
 

@@ -117,6 +117,40 @@ class SmsServiceTest extends TestCase
         $this->assertSame('fail123', $result->gatewayUid);
     }
 
+    public function test_imart_insufficient_balance_is_reported_clearly(): void
+    {
+        config([
+            'services.sms.driver' => 'imart',
+            'services.sms.endpoint' => 'https://smsservice.imartgroup.co.tz/api/v3/sms/send',
+            'services.sms.token' => 'test-token',
+            'services.sms.sender_id' => 'College',
+        ]);
+
+        Setting::query()->create([
+            'school_name' => 'Test School',
+            'sms_enabled' => true,
+            'sms_simulate' => false,
+            'sms_api_endpoint' => 'https://smsservice.imartgroup.co.tz/api/v3/sms/send',
+            'sms_api_token' => 'test-token',
+            'sms_sender_id' => 'College',
+        ]);
+
+        Http::fake([
+            'smsservice.imartgroup.co.tz/api/v3/sms/send' => Http::response([
+                'status' => 'error',
+                'message' => 'Insufficient SMS balance',
+                'code' => 'INSUFFICIENT_SMS_BALANCE',
+                'success' => false,
+            ], 422),
+        ]);
+
+        $result = app(SmsService::class)->send('+255655139724', 'Hello parent');
+
+        $this->assertFalse($result->succeeded());
+        $this->assertSame('failed', $result->status);
+        $this->assertStringContainsString('insufficient balance', strtolower($result->detail));
+    }
+
     public function test_check_delivery_reports_carrier_status(): void
     {
         config([
