@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Maatwebsite\Excel\Facades\Excel;
+use Smalot\PdfParser\Parser;
 
 class StudentImportService
 {
@@ -15,6 +16,10 @@ class StudentImportService
     public function readRowsFromFile(UploadedFile $file): array
     {
         $extension = strtolower($file->getClientOriginalExtension());
+
+        if ($extension === 'pdf') {
+            return $this->readRowsFromPdf($file);
+        }
 
         if (in_array($extension, ['xlsx', 'xls'], true) && class_exists(Excel::class)) {
             $sheet = Excel::toArray(new \App\Imports\StudentsImport, $file);
@@ -35,6 +40,113 @@ class StudentImportService
         fclose($handle);
 
         return $rows;
+    }
+
+    /** @return list<array<int, string|null>> */
+    private function readRowsFromPdf(UploadedFile $file): array
+    {
+        $text = $this->extractPdfText($file->getRealPath() ?: '');
+        if ($text === '') {
+            return [];
+        }
+
+        $lines = preg_split('/\R/u', $text) ?: [];
+        $rows = [
+            ['name', 'admission_no', 'class_name', 'parent_name', 'parent_phone', 'parent_email'],
+        ];
+
+        foreach ($lines as $line) {
+            $rawLine = trim($line);
+            if ($rawLine === '') {
+                continue;
+            }
+
+            $studentRow = $this->parsePdfStudentLine($rawLine);
+            if ($studentRow !== null) {
+                $rows[] = $studentRow;
+            }
+        }
+
+        return count($rows) > 1 ? $rows : [];
+    }
+
+    private function extractPdfText(string $absolutePath): string
+    {
+        if ($absolutePath === '' || ! is_file($absolutePath)) {
+            return '';
+        }
+
+        try {
+            $parser = new Parser;
+            $pdf = $parser->parseFile($absolutePath);
+
+            return trim($pdf->getText() ?? '');
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    /** @return list<string|null>|null */
+    private function parsePdfStudentLine(string $line): ?array
+    {
+        if (! preg_match('/^\d+\s+/u', $line)) {
+            return null;
+        }
+
+        // Strip leading row number and normalise whitespace/tabs.
+        $body = trim(preg_replace('/^\d+\s+/u', '', $line) ?? '');
+        $body = trim(preg_replace('/[ \t]+/u', ' ', $body) ?? '');
+        if ($body === '') {
+            return null;
+        }
+
+        $email = null;
+        if (preg_match('/([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})/iu', $body, $emailMatch)) {
+            $email = strtolower($emailMatch[1]);
+            $body = trim(str_replace($emailMatch[0], ' ', $body));
+        }
+
+        $phone = null;
+        if (preg_match('/(\+?255[\s\-]?\d{2,3}[\s\-]?\d{3}[\s\-]?\d{3,4}|\b0\d{9}\b)/u', $body, $phoneMatch)) {
+            $phone = preg_replace('/\s+/u', '', $phoneMatch[1]) ?? $phoneMatch[1];
+            $body = trim(str_replace($phoneMatch[0], ' ', $body));
+        }
+
+        $admissionNo = null;
+        if (preg_match('/\b(\d{4}-\d{2}-\d{5}|MBN-\d{4}-\d{3,})\b/iu', $body, $admissionMatch)) {
+            $admissionNo = strtoupper($admissionMatch[1]);
+            $body = trim(str_replace($admissionMatch[0], ' ', $body));
+        }
+
+        // Blank registration markers from tabular PDFs (—, -, N/A).
+        $body = trim(preg_replace('/(?:^|[\s\t])(?:—+|-+|N\/?A)(?=[\s\t]|$)/iu', ' ', $body) ?? $body);
+
+        $className = null;
+        if (preg_match('/\b((?:Form|Grade)\s*[IVX0-9]+|Group\s*\d+|Unassigned)\b/iu', $body, $classMatch)) {
+            $className = trim(preg_replace('/\s+/u', ' ', $classMatch[1]) ?? $classMatch[1]);
+            $body = trim(str_replace($classMatch[0], ' ', $body));
+        }
+
+        // Drop trailing note fragments such as "Missing reg." / "Complete".
+        $body = trim(preg_replace(
+            '/\b(Missing reg\.?|Duplicate reg\.?|Merged duplicate|Complete|Name as supplied)\b\.?/iu',
+            ' ',
+            $body
+        ) ?? $body);
+        $body = trim(preg_replace('/\s+/u', ' ', $body) ?? $body);
+
+        if ($body === '' || ! preg_match('/[A-Za-z]/u', $body)) {
+            return null;
+        }
+
+        return [
+            $body,
+            $admissionNo,
+            $className,
+            null,
+            $phone,
+            $email,
+        ];
     }
 
     public function import(UploadedFile $file, User $importedBy): StudentImportResult
@@ -178,9 +290,9 @@ class StudentImportService
         $header = preg_replace('/[^a-z0-9]+/', '_', $header) ?? $header;
 
         return match (true) {
-            in_array($header, ['name', 'student_name', 'student', 'full_name', 'learner_name'], true) => 'name',
-            in_array($header, ['admission_no', 'admission_number', 'admission', 'reg_no', 'registration_no'], true) => 'admission_no',
-            in_array($header, ['class', 'class_name', 'form', 'grade', 'level'], true) => 'class_name',
+            in_array($header, ['name', 'student_name', 'student', 'full_name', 'learner_name', 'no_full_name'], true) => 'name',
+            in_array($header, ['admission_no', 'admission_number', 'admission', 'reg_no', 'registration_no', 'registration_number', 'registration'], true) => 'admission_no',
+            in_array($header, ['class', 'class_name', 'form', 'grade', 'level', 'group'], true) => 'class_name',
             in_array($header, ['parent_name', 'guardian_name', 'guardian', 'parent'], true) => 'parent_name',
             in_array($header, ['parent_phone', 'phone', 'guardian_phone', 'mobile', 'contact_phone'], true) => 'parent_phone',
             in_array($header, ['parent_email', 'email', 'guardian_email', 'contact_email'], true) => 'parent_email',

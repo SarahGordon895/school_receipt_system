@@ -7,11 +7,11 @@
 
 @section('content')
 <div class="card mb-3">
-  <div class="card-header fw-semibold"><i class="bi bi-file-earmark-arrow-up me-2"></i>Import student register (Excel / CSV)</div>
+  <div class="card-header fw-semibold"><i class="bi bi-file-earmark-arrow-up me-2"></i>Import student register (Excel / CSV / PDF)</div>
   <div class="card-body">
     <p class="text-muted mb-3">
-      Upload the school student list. After import you will see a <strong>numbered table of every student</strong> from the file — not the document itself.
-      School staff can import; link each student to a parent portal account later when editing the student.
+      Upload Excel, CSV or PDF. The system <strong>reads the file and saves students into the register</strong>.
+      After import you are taken to a <strong>numbered student list</strong> — the PDF/document itself is never shown on screen.
     </p>
 
     <div class="table-responsive mb-4">
@@ -38,17 +38,20 @@
         </tbody>
       </table>
     </div>
-    <p class="small text-muted mb-3">Use the header row above, or omit headers and keep the same column order.</p>
+    <p class="small text-muted mb-3">
+      Excel/CSV: use the header row above, or omit headers and keep the same column order.
+      PDF: include a numbered student list with name, registration/admission number, class/group, phone and email.
+    </p>
 
     <form method="POST" action="{{ route('students.import.store') }}" enctype="multipart/form-data" class="row g-3 align-items-end">
       @csrf
       <div class="col-md-8">
         <label for="file" class="form-label">Student list file</label>
-        <input type="file" name="file" id="file" accept=".xlsx,.xls,.csv,.txt" class="form-control" required>
+        <input type="file" name="file" id="file" accept=".xlsx,.xls,.csv,.txt,.pdf,application/pdf" class="form-control" required>
         @error('file')<div class="text-danger small">{{ $message }}</div>@enderror
       </div>
       <div class="col-md-4">
-        <x-icon-btn type="submit" icon="bi-upload" label="Import &amp; show list" variant="primary" :iconOnly="false" />
+        <x-icon-btn type="submit" icon="bi-upload" label="Import into student list" variant="primary" :iconOnly="false" />
       </div>
     </form>
   </div>

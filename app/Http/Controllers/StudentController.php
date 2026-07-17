@@ -192,7 +192,13 @@ class StudentController extends Controller
     public function importStore(Request $request, StudentImportService $importService)
     {
         $data = $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
+            'file' => [
+                'required',
+                'file',
+                'max:10240',
+                'extensions:xlsx,xls,csv,txt,pdf',
+                'mimetypes:application/pdf,application/x-pdf,text/plain,text/csv,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/octet-stream',
+            ],
         ]);
 
         $result = $importService->import($data['file'], $request->user());
@@ -201,9 +207,12 @@ class StudentController extends Controller
             return back()->with('error', 'No student rows were found in the uploaded file. Check the format and try again.');
         }
 
-        $request->session()->flash('import_result', $result->toArray());
+        // Keep the parsed student list in session (not the PDF/file itself).
+        $request->session()->put('import_result', $result->toArray());
 
-        return redirect()->route('students.import.result');
+        return redirect()
+            ->route('students.import.result')
+            ->with('success', 'Students were imported as a list. The uploaded file is not shown.');
     }
 
     public function importResult(Request $request)
