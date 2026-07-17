@@ -50,10 +50,13 @@
             <div class="login-input-wrap">
                 <i class="bi bi-telephone" aria-hidden="true"></i>
                 <input id="phone" type="tel" name="phone" value="{{ old('phone') }}"
-                    autocomplete="tel" placeholder="+2557XXXXXXXX" class="login-input"
+                    autocomplete="tel" placeholder="07XXXXXXXX or +2557XXXXXXXX" class="login-input"
                     {{ $loginType === 'parent' ? 'required' : '' }}>
             </div>
             <x-input-error :messages="$errors->get('phone')" class="mt-2" />
+            <div class="form-text {{ $loginType === 'parent' ? '' : 'd-none' }}" id="phoneHelp">
+                Use the phone number registered for the parent account (e.g. 0761355613).
+            </div>
         </div>
 
         <div class="login-field">
@@ -96,6 +99,7 @@
             const phoneInput = document.getElementById('phone');
             const emailLabel = document.getElementById('emailLabelText');
             const forgotLink = document.getElementById('forgotLink');
+            const phoneHelp = document.getElementById('phoneHelp');
 
             function setType(type) {
                 loginTypeInput.value = type;
@@ -109,9 +113,12 @@
                 emailField.classList.toggle('d-none', isParent);
                 phoneField.classList.toggle('d-none', !isParent);
                 forgotLink?.classList.toggle('d-none', isParent);
+                phoneHelp?.classList.toggle('d-none', !isParent);
 
                 emailInput.required = !isParent;
                 phoneInput.required = isParent;
+                emailInput.disabled = isParent;
+                phoneInput.disabled = !isParent;
 
                 if (type === 'super_admin') {
                     emailLabel.textContent = @json(__('Personal email'));
@@ -123,6 +130,8 @@
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => setType(tab.dataset.loginType));
             });
+
+            setType(loginTypeInput.value || 'school_admin');
         })();
     </script>
     @endpush

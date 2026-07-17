@@ -77,6 +77,44 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('parent.dashboard', absolute: false));
     }
 
+    public function test_parent_can_authenticate_with_local_phone_format(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'parent',
+            'phone' => '+255761355613',
+            'email' => 'parent.local@mbonea.sc.tz',
+        ]);
+
+        $response = $this->post('/login', [
+            'login_type' => 'parent',
+            'phone' => '0761355613',
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('parent.dashboard', absolute: false));
+    }
+
+    public function test_parent_login_ignores_intended_admin_url(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'parent',
+            'phone' => '+255712000088',
+            'email' => 'parent.intended@mbonea.sc.tz',
+        ]);
+
+        $this->get('/dashboard');
+
+        $response = $this->post('/login', [
+            'login_type' => 'parent',
+            'phone' => '0712000088',
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('parent.dashboard', absolute: false));
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create(['role' => 'school_admin']);

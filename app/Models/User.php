@@ -76,18 +76,43 @@ class User extends Authenticatable
         $digits = preg_replace('/\D+/', '', $phone) ?? '';
 
         if ($digits === '') {
-            return $phone;
+            return trim($phone);
         }
 
-        if (str_starts_with($digits, '255')) {
-            return '+'.$digits;
-        }
-
-        if (str_starts_with($digits, '0')) {
+        // Tanzania local mobile: 07XXXXXXXX / 06XXXXXXXX
+        if (str_starts_with($digits, '0') && strlen($digits) === 10) {
             return '+255'.substr($digits, 1);
         }
 
+        // Already includes country code
+        if (str_starts_with($digits, '255') && strlen($digits) >= 12) {
+            return '+'.substr($digits, 0, 12);
+        }
+
+        // Local mobile without leading zero: 7XXXXXXXX / 6XXXXXXXX
+        if (strlen($digits) === 9 && in_array($digits[0], ['6', '7'], true)) {
+            return '+255'.$digits;
+        }
+
+        if (str_starts_with($digits, '0')) {
+            return '+255'.ltrim($digits, '0');
+        }
+
         return '+'.$digits;
+    }
+
+    /**
+     * Last 9 subscriber digits used to match Tanzania mobile numbers across formats.
+     */
+    public static function phoneMatchKey(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', self::normalizePhone($phone)) ?? '';
+
+        if (str_starts_with($digits, '255') && strlen($digits) >= 12) {
+            return substr($digits, -9);
+        }
+
+        return strlen($digits) >= 9 ? substr($digits, -9) : $digits;
     }
 
     public function getLoginIdentifierAttribute(): string

@@ -31,7 +31,9 @@ class AuthenticatedSessionController extends Controller
         $user = $request->user();
         $homeRoute = $user?->home_route ?? 'dashboard';
 
-        return redirect()->intended(route($homeRoute, absolute: false));
+        // Always send users to their role home. Using intended() can send parents
+        // to /dashboard (from a prior admin URL) and break the parent login flow.
+        return redirect()->route($homeRoute);
     }
 
     /**

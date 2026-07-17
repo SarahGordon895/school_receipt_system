@@ -44,21 +44,36 @@ class LoginRequest extends FormRequest
         if ($loginType === 'parent') {
             $phoneInput = $this->string('phone')->toString();
             $phone = User::normalizePhone($phoneInput);
+            $matchKey = User::phoneMatchKey($phoneInput);
 
-            // Multiple parent accounts may share the same phone number.
-            // We authenticate by checking the password against all candidates.
             $candidates = User::query()
                 ->where('role', 'parent')
-                ->where(function ($query) use ($phone, $phoneInput) {
-                    $query->where('phone', $phone)
-                        ->orWhere('phone', $phoneInput);
+                ->whereNotNull('phone')
+                ->where('phone', '!=', '')
+                ->get()
+                ->filter(function (User $candidate) use ($phone, $phoneInput, $matchKey) {
+                    $stored = (string) $candidate->phone;
+
+                    if ($stored === $phone || $stored === $phoneInput) {
+                        return true;
+                    }
+
+                    if ($matchKey !== '' && User::phoneMatchKey($stored) === $matchKey) {
+                        return true;
+                    }
+
+                    return User::normalizePhone($stored) === $phone;
                 })
-                ->get();
+                ->values();
 
             $user = null;
             foreach ($candidates as $candidate) {
                 if (Hash::check($password, $candidate->password)) {
                     $user = $candidate;
+                    // Keep stored phone in canonical format for future logins.
+                    if ($user->phone !== $phone) {
+                        $user->forceFill(['phone' => $phone])->save();
+                    }
                     break;
                 }
             }
