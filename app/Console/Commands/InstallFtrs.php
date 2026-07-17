@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Student;
+use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 
@@ -16,7 +18,7 @@ class InstallFtrs extends Command
         $this->info('Installing FTRS...');
 
         if ($this->option('fresh')) {
-            if (!$this->confirm('This will erase all data. Continue?', false)) {
+            if (! $this->confirm('This will erase all data. Continue?', false)) {
                 $this->warn('Aborted.');
 
                 return self::FAILURE;
@@ -28,12 +30,12 @@ class InstallFtrs extends Command
 
         Artisan::call('db:seed', ['--force' => true], $this->output);
 
-        if (!file_exists(public_path('storage'))) {
+        if (! file_exists(public_path('storage'))) {
             Artisan::call('storage:link', [], $this->output);
         }
 
-        $studentCount = \App\Models\Student::count();
-        $parentCount = \App\Models\User::where('role', 'parent')->count();
+        $studentCount = Student::count();
+        $parentCount = User::where('role', 'parent')->count();
 
         $this->newLine();
         $this->components->info("FTRS is ready — {$studentCount} students, {$parentCount} parent accounts.");
@@ -44,7 +46,7 @@ class InstallFtrs extends Command
                 ['School Admin', 'admin@mbonea.sc.tz', 'Mbonea@Admin2025'],
                 ['Parent (Mkumbo)', '+255655139724', 'Mkumbo@2025'],
                 ['Parent (Gordon)', '+255655139724', 'Gordon@2025'],
-                ['Parent (Chaula)', '+255773255214', 'Chaula@2025'],
+                ['Parent (Chaula)', '+255718216434', 'Chaula@2025'],
                 ['Other parents', 'Each student\'s unique +255… phone', 'Parent@2025'],
             ]
         );

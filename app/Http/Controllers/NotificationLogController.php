@@ -6,7 +6,6 @@ use App\Http\Requests\BatchParentReminderRequest;
 use App\Models\NotificationLog;
 use App\Models\Setting;
 use App\Models\Student;
-use App\Models\User;
 use App\Services\NotificationTemplateService;
 use App\Services\ParentReminderService;
 use App\Services\SmsService;
@@ -210,64 +209,47 @@ class NotificationLogController extends Controller
         $setting = Setting::current();
         $catalog = $templateService->manualTemplateCatalog($setting);
 
-        $parents = User::query()
-            ->where('role', 'parent')
-            ->whereHas('admittedStudents')
-            ->with(['admittedStudents' => function ($query) {
-                $query->with(['feeStructures', 'parentUser', 'primaryParentLink'])
-                    ->withSum('receipts', 'amount')
-                    ->orderBy('name');
-            }])
+        $students = Student::query()
+            ->with(['feeStructures', 'parentUser', 'primaryParentLink'])
+            ->withSum('receipts', 'amount')
+            ->orderByRaw("CASE WHEN class_name IS NULL OR class_name = '' THEN 1 ELSE 0 END")
+            ->orderBy('class_name')
             ->orderBy('name')
             ->get()
-            ->map(function (User $parent) use ($templateService) {
-                $students = $parent->admittedStudents;
-                $focus = $students
-                    ->sortBy(fn (Student $student) => $templateService->statusPriority(
-                        $templateService->suggestManualEventTypeForStudent($student)
-                    ))
-                    ->first();
-
-                $suggestedType = $focus
-                    ? $templateService->suggestManualEventTypeForStudent($focus)
-                    : NotificationTemplateService::FEE_REMINDER;
-
-                $hasContact = filled($parent->phone) || filled($parent->email)
-                    || ($focus && $focus->hasParentContact());
+            ->map(function (Student $student) use ($templateService) {
+                $suggestedType = $templateService->suggestManualEventTypeForStudent($student);
 
                 return [
-                    'parent' => $parent,
-                    'students' => $students,
-                    'focus_student' => $focus,
+                    'student' => $student,
                     'suggested_type' => $suggestedType,
                     'suggested_label' => $templateService->eventLabel($suggestedType),
                     'priority' => $templateService->statusPriority($suggestedType),
-                    'balance' => (int) ($focus?->balance ?? 0),
-                    'due_date' => $focus?->resolveFeeDueDate()->format('d/m/Y'),
-                    'days_until' => $focus
-                        ? now()->startOfDay()->diffInDays($focus->resolveFeeDueDate()->startOfDay(), false)
-                        : null,
-                    'has_contact' => $hasContact,
+                    'balance' => (int) $student->balance,
+                    'due_date' => $student->resolveFeeDueDate()->format('d/m/Y'),
+                    'days_until' => now()->startOfDay()->diffInDays($student->resolveFeeDueDate()->startOfDay(), false),
+                    'parent_name' => $student->parent_name
+                        ?: $student->parentUser?->name
+                        ?: 'No parent name',
+                    'parent_phone' => $student->resolveParentPhone(),
+                    'parent_email' => $student->resolveParentEmail(),
+                    'has_contact' => $student->hasParentContact(),
+                    'class_name' => filled($student->class_name) ? $student->class_name : 'Unassigned',
                 ];
             })
-            ->filter(fn (array $row) => $row['has_contact'])
             ->sortBy([
+                ['class_name', 'asc'],
                 ['priority', 'asc'],
-                ['balance', 'desc'],
+                ['name', 'asc'],
             ])
             ->values();
 
-        $selectedParentId = $request->integer('parent_user_id') ?: null;
-        if (! $selectedParentId && $request->integer('student_id')) {
-            $selectedParentId = Student::query()->find($request->integer('student_id'))?->parent_user_id;
-        }
-
+        $selectedStudentId = $request->integer('student_id') ?: null;
         $seedSuggested = null;
-        if ($selectedParentId) {
-            $seedSuggested = $parents->firstWhere(fn ($row) => (int) $row['parent']->id === $selectedParentId)['suggested_type'] ?? null;
+        if ($selectedStudentId) {
+            $seedSuggested = $students->firstWhere(fn ($row) => (int) $row['student']->id === $selectedStudentId)['suggested_type'] ?? null;
         }
-        if (! $seedSuggested && $parents->isNotEmpty()) {
-            $seedSuggested = $parents->first()['suggested_type'];
+        if (! $seedSuggested && $students->isNotEmpty()) {
+            $seedSuggested = $students->first()['suggested_type'];
         }
 
         $requestedType = $request->string('message_type')->toString();
@@ -286,9 +268,13 @@ class NotificationLogController extends Controller
             ->mapWithKeys(fn ($item, $type) => [$type => $item['body']])
             ->all();
 
+        $classes = $students->pluck('class_name')->unique()->values();
+
         return view('notification-logs.send', [
-            'parents' => $parents,
-            'selectedParentId' => $selectedParentId,
+            'students' => $students,
+            'studentsByClass' => $students->groupBy('class_name'),
+            'classes' => $classes,
+            'selectedStudentId' => $selectedStudentId,
             'selectedMessageType' => $selectedMessageType,
             'templates' => $templates,
             'templateCatalog' => $catalog,
@@ -305,13 +291,14 @@ class NotificationLogController extends Controller
     {
         $data = $request->validated();
 
-        $parents = User::query()
-            ->where('role', 'parent')
-            ->whereIn('id', $data['parent_user_ids'])
+        $students = Student::query()
+            ->with(['parentUser', 'primaryParentLink'])
+            ->withSum('receipts', 'amount')
+            ->whereIn('id', $data['student_ids'])
             ->get();
 
-        $messages = $this->parentReminderService->sendBatchToParents(
-            $parents,
+        $messages = $this->parentReminderService->sendBatchToStudents(
+            $students,
             $request->sendSms(),
             $request->sendEmail(),
             $data['message_type'] ?? 'auto'

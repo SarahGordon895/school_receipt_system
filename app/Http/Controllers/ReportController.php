@@ -96,6 +96,7 @@ class ReportController extends Controller
 
         return view('reports.unpaid', [
             'students' => $report['students'],
+            'studentsByClass' => $report['studentsByClass'],
             'summary' => $report['summary'],
             'classes' => $report['classes'],
             'classFilter' => $report['classFilter'],
@@ -346,6 +347,8 @@ class ReportController extends Controller
             ->with(['feeStructures', 'parentUser', 'primaryParentLink'])
             ->withSum('receipts', 'amount')
             ->when($classFilter !== '', fn ($q) => $q->where('class_name', 'like', '%'.$classFilter.'%'))
+            ->orderByRaw("CASE WHEN class_name IS NULL OR class_name = '' THEN 1 ELSE 0 END")
+            ->orderBy('class_name')
             ->orderBy('name')
             ->get()
             ->map(function (Student $student) {
@@ -360,10 +363,19 @@ class ReportController extends Controller
                     'days_until_due' => $daysUntilDue,
                     'is_overdue' => $student->isFeeOverdue(),
                     'milestone' => $this->resolveMilestoneLabel($student, $daysUntilDue),
+                    'class_name' => filled($student->class_name) ? $student->class_name : 'Unassigned',
+                    'parent_name' => $student->parent_name
+                        ?: $student->parentUser?->name
+                        ?: 'N/A',
+                    'parent_phone' => $student->resolveParentPhone(),
+                    'has_contact' => $student->hasParentContact(),
                 ];
             })
             ->filter(fn ($row) => $row['balance'] > 0)
-            ->sortBy('days_until_due')
+            ->sortBy([
+                ['class_name', 'asc'],
+                ['days_until_due', 'asc'],
+            ])
             ->values();
 
         $summary = [
@@ -373,10 +385,16 @@ class ReportController extends Controller
             'due_in_14_days' => $students->filter(fn ($r) => $r['days_until_due'] === 14)->count(),
         ];
 
-        $classes = Student::query()->whereNotNull('class_name')->distinct()->orderBy('class_name')->pluck('class_name');
+        $classes = Student::query()
+            ->whereNotNull('class_name')
+            ->where('class_name', '!=', '')
+            ->distinct()
+            ->orderBy('class_name')
+            ->pluck('class_name');
 
         return [
             'students' => $students,
+            'studentsByClass' => $students->groupBy('class_name'),
             'summary' => $summary,
             'classes' => $classes,
             'classFilter' => $classFilter,

@@ -52,13 +52,13 @@ Open http://127.0.0.1:8088 (this project uses port **8088** to avoid clashing wi
 
 ## Demo accounts
 
-| Role | Email | Password |
+| Role | Login | Password |
 |------|-------|----------|
-| Super Admin | superadmin@school.tz | password |
-| School Admin | admin@school.tz | password |
-| Parent (1 child — Mkumbo) | parent.mkumbo@school.tz | password |
-| Parent (1 child — Gordon) | parent.gordon@school.tz | password |
-| Parent (1 child — Chaula) | parent.chaula@school.tz | password |
+| Super Admin | sarahgeorge7224@gmail.com | Super@FTRS2025 |
+| School Admin | admin@mbonea.sc.tz | Mbonea@Admin2025 |
+| Parent (1 child — Mkumbo) | +255655139724 | Mkumbo@2025 |
+| Parent (1 child — Gordon) | +255655139724 | Gordon@2025 |
+| Parent (1 child — Chaula) | +255718216434 | Chaula@2025 |
 
 Demo data includes students, fee structures, sample receipts, and outstanding balances.
 
@@ -80,7 +80,7 @@ Demo data includes students, fee structures, sample receipts, and outstanding ba
 
 Send reminders manually: **Reports → Unpaid report → Send reminders**
 
-Automatic reminders (daily 07:00):
+Automatic reminders (daily 06:00):
 
 ```cmd
 php artisan schedule:work

@@ -23,8 +23,8 @@
 
 <div class="alert alert-info small mb-3">
   <i class="bi bi-info-circle me-1"></i>
-  Select <strong>{{ $minBatch }} to {{ $maxBatch }} parents</strong> below, choose the event template, then send SMS/email.
-  You cannot message all parents at once from this screen — use the selection checkboxes.
+  Select <strong>{{ $minBatch }} to {{ $maxBatch }} students</strong> below, choose the event template, then send SMS/email to their parents.
+  Students are grouped by class.
 </div>
 
 <div class="row mb-3 g-3">
@@ -73,13 +73,20 @@
         @endforeach
       </select>
     </div>
+    <div class="col-md-5">
+      <label class="form-label" for="unpaid-search">Search in list</label>
+      <input type="search" id="unpaid-search" class="form-control" placeholder="Student, admission no, parent, phone…">
+    </div>
+    <div class="col-md-3">
+      <div class="form-text mb-0">Showing unpaid students only, grouped by class.</div>
+    </div>
   </div>
 </form>
 
 <form method="POST" action="{{ route('reports.unpaid.send-reminders') }}" id="unpaid-send-form" class="card mb-3">
   @csrf
   <div class="card-header fw-semibold d-flex flex-wrap justify-content-between align-items-center gap-2">
-    <span><i class="bi bi-send me-2"></i>Send SMS / email to selected parents</span>
+    <span><i class="bi bi-send me-2"></i>Send SMS / email to selected students’ parents</span>
     <span class="badge text-bg-primary" id="unpaid-selection-counter">0 / {{ $maxBatch }} selected</span>
   </div>
   <div class="card-body">
@@ -109,24 +116,26 @@
         <button type="submit" class="btn btn-school-primary w-100">
           <i class="bi bi-send me-1"></i> Send to selected (max {{ $maxBatch }})
         </button>
-        <div class="form-text">Select {{ $minBatch }}–{{ $maxBatch }} parents in the table below.</div>
+        <div class="form-text">Select {{ $minBatch }}–{{ $maxBatch }} students in the table below.</div>
       </div>
     </div>
   </div>
 </form>
 
 <div class="card">
-  <div class="card-header fw-semibold"><i class="bi bi-exclamation-triangle me-2"></i>Students with Outstanding Fees</div>
+  <div class="card-header fw-semibold d-flex justify-content-between align-items-center gap-2">
+    <span><i class="bi bi-exclamation-triangle me-2"></i>Students with Outstanding Fees</span>
+    <span class="text-muted small" id="unpaid-visible-count">{{ $students->count() }} listed</span>
+  </div>
   <div class="card-body p-0">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
+        <thead class="table-light sticky-top">
           <tr>
             <th style="width:2.5rem">
               <span class="visually-hidden">Select</span>
             </th>
             <th>Student</th>
-            <th>Class</th>
             <th>Parent Contact</th>
             <th class="text-end">Expected</th>
             <th class="text-end">Paid</th>
@@ -137,39 +146,56 @@
           </tr>
         </thead>
         <tbody>
-          @forelse($students as $row)
-            <tr>
-              <td>
-                <input type="checkbox" class="form-check-input unpaid-student-checkbox"
-                  name="student_ids[]" value="{{ $row['student']->id }}"
-                  form="unpaid-send-form" aria-label="Select {{ $row['student']->name }}">
-              </td>
-              <td class="fw-semibold">{{ $row['student']->name }}</td>
-              <td>{{ $row['student']->class_name ?? 'N/A' }}</td>
-              <td>
-                <div>{{ $row['student']->parent_name ?? 'N/A' }}</div>
-                <small class="text-muted">{{ $row['student']->resolveParentPhone() ?? 'No phone' }}</small>
-              </td>
-              <td class="text-end">Tsh {{ format_tzs($row['expected']) }}</td>
-              <td class="text-end">Tsh {{ format_tzs($row['paid']) }}</td>
-              <td class="text-end fw-semibold text-danger">Tsh {{ format_tzs($row['balance']) }}</td>
-              <td>{{ $row['student']->resolveFeeDueDate()->format('d/m/Y') }}</td>
-              <td>
-                @if($row['is_overdue'])
-                  <span class="badge text-bg-danger">{{ $row['milestone'] }}</span>
-                @elseif(in_array($row['days_until_due'], [14, 7, 3, 0], true))
-                  <span class="badge text-bg-warning">{{ $row['milestone'] }}</span>
-                @else
-                  <span class="badge text-bg-secondary">{{ $row['milestone'] }}</span>
-                @endif
-              </td>
-              <td class="text-end">
-                <x-icon-btn :href="route('notification-logs.send.create', ['student_id' => $row['student']->id])"
-                  icon="bi-send" label="Send" variant="outline-primary" size="sm" />
+          @forelse($studentsByClass as $className => $rows)
+            <tr class="class-group-header table-secondary" data-class-group="{{ $className }}">
+              <td colspan="9" class="fw-semibold py-2">
+                <i class="bi bi-collection me-1"></i>{{ $className }}
+                <span class="text-muted fw-normal">({{ $rows->count() }})</span>
               </td>
             </tr>
+            @foreach($rows as $row)
+              <tr class="unpaid-student-row"
+                  data-class="{{ $row['class_name'] }}"
+                  data-search="{{ strtolower(trim(($row['student']->name ?? '').' '.($row['student']->admission_no ?? '').' '.($row['parent_name'] ?? '').' '.($row['parent_phone'] ?? '').' '.$row['class_name'])) }}">
+                <td>
+                  <input type="checkbox" class="form-check-input unpaid-student-checkbox"
+                    name="student_ids[]" value="{{ $row['student']->id }}"
+                    form="unpaid-send-form"
+                    aria-label="Select {{ $row['student']->name }}"
+                    @disabled(! $row['has_contact'])>
+                </td>
+                <td>
+                  <div class="fw-semibold">{{ $row['student']->name }}</div>
+                  <div class="small text-muted">{{ $row['student']->admission_no ?: 'No admission no' }}</div>
+                </td>
+                <td>
+                  <div>{{ $row['parent_name'] }}</div>
+                  <small class="text-muted">{{ $row['parent_phone'] ?: 'No phone' }}</small>
+                  @unless($row['has_contact'])
+                    <div><span class="badge text-bg-warning">No contact</span></div>
+                  @endunless
+                </td>
+                <td class="text-end">Tsh {{ format_tzs($row['expected']) }}</td>
+                <td class="text-end">Tsh {{ format_tzs($row['paid']) }}</td>
+                <td class="text-end fw-semibold text-danger">Tsh {{ format_tzs($row['balance']) }}</td>
+                <td>{{ $row['student']->resolveFeeDueDate()->format('d/m/Y') }}</td>
+                <td>
+                  @if($row['is_overdue'])
+                    <span class="badge text-bg-danger">{{ $row['milestone'] }}</span>
+                  @elseif(in_array($row['days_until_due'], [14, 7, 3, 0], true))
+                    <span class="badge text-bg-warning">{{ $row['milestone'] }}</span>
+                  @else
+                    <span class="badge text-bg-secondary">{{ $row['milestone'] }}</span>
+                  @endif
+                </td>
+                <td class="text-end">
+                  <x-icon-btn :href="route('notification-logs.send.create', ['student_id' => $row['student']->id])"
+                    icon="bi-send" label="Send" variant="outline-primary" size="sm" />
+                </td>
+              </tr>
+            @endforeach
           @empty
-            <tr><td colspan="10" class="text-center text-muted py-4">No outstanding balances.</td></tr>
+            <tr><td colspan="9" class="text-center text-muted py-4">No outstanding balances.</td></tr>
           @endforelse
         </tbody>
       </table>
@@ -183,7 +209,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const maxBatch = {{ $maxBatch }};
     const minBatch = {{ $minBatch }};
     const checkboxes = Array.from(document.querySelectorAll('.unpaid-student-checkbox'));
+    const rows = Array.from(document.querySelectorAll('.unpaid-student-row'));
+    const groupHeaders = Array.from(document.querySelectorAll('.class-group-header'));
     const counter = document.getElementById('unpaid-selection-counter');
+    const searchInput = document.getElementById('unpaid-search');
     const form = document.getElementById('unpaid-send-form');
 
     function selectedCount() {
@@ -195,35 +224,59 @@ document.addEventListener('DOMContentLoaded', function () {
         counter.textContent = count + ' / ' + maxBatch + ' selected';
         counter.className = 'badge ' + (count >= maxBatch ? 'text-bg-warning' : 'text-bg-primary');
         checkboxes.forEach(cb => {
-            cb.disabled = !cb.checked && count >= maxBatch;
+            if (cb.disabled && !cb.checked) return;
+            cb.disabled = (!cb.checked && count >= maxBatch) || cb.hasAttribute('data-no-contact');
         });
     }
 
+    function filterRows() {
+        const query = (searchInput.value || '').trim().toLowerCase();
+        let visible = 0;
+        rows.forEach(function (row) {
+            const show = !query || (row.dataset.search || '').includes(query);
+            row.style.display = show ? '' : 'none';
+            if (!show) {
+                const cb = row.querySelector('.unpaid-student-checkbox');
+                if (cb && cb.checked) cb.checked = false;
+            }
+            if (show) visible++;
+        });
+        groupHeaders.forEach(function (header) {
+            const className = header.dataset.classGroup;
+            const anyVisible = rows.some(row => row.dataset.class === className && row.style.display !== 'none');
+            header.style.display = anyVisible ? '' : 'none';
+        });
+        document.getElementById('unpaid-visible-count').textContent = visible + ' listed';
+        updateCounter();
+    }
+
     checkboxes.forEach(cb => {
+        if (cb.disabled) cb.setAttribute('data-no-contact', '1');
         cb.addEventListener('change', function () {
             if (this.checked && selectedCount() > maxBatch) {
                 this.checked = false;
-                alert('Maximum ' + maxBatch + ' parents per send.');
+                alert('Maximum ' + maxBatch + ' students per send.');
             }
             updateCounter();
         });
     });
 
-    updateCounter();
+    searchInput.addEventListener('input', filterRows);
+    filterRows();
 
     form.addEventListener('submit', function (event) {
         const count = selectedCount();
         if (count < minBatch) {
             event.preventDefault();
-            alert('Select at least ' + minBatch + ' parent(s) from the table.');
+            alert('Select at least ' + minBatch + ' student(s) from the table.');
             return;
         }
         if (count > maxBatch) {
             event.preventDefault();
-            alert('Maximum ' + maxBatch + ' parents per send.');
+            alert('Maximum ' + maxBatch + ' students per send.');
             return;
         }
-        if (!confirm('Send SMS/email to ' + count + ' selected parent(s)?')) {
+        if (!confirm('Send SMS/email for ' + count + ' selected student(s)?')) {
             event.preventDefault();
         }
     });

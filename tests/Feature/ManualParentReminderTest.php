@@ -33,14 +33,16 @@ class ManualParentReminderTest extends TestCase
             'parent_email' => $parent->email,
             'parent_phone' => $parent->phone,
             'expected_total_fee' => 200000,
+            'class_name' => 'Form I',
         ]);
 
         $this->actingAs($admin)
             ->get(route('notification-logs.send.create'))
             ->assertOk()
-            ->assertSee('Send to parents using template')
-            ->assertSee('Listed Parent')
-            ->assertSee('Auto — match each parent');
+            ->assertSee('Send to parents by student')
+            ->assertSee('Listed Child')
+            ->assertSee('Form I')
+            ->assertSee('Auto — match each student');
     }
 
     public function test_parent_cannot_access_send_reminder_form(): void
@@ -76,7 +78,7 @@ class ManualParentReminderTest extends TestCase
         $this->app->instance(SmsService::class, $sms);
 
         $response = $this->actingAs($admin)->post(route('notification-logs.send.store'), [
-            'parent_user_ids' => [$parent->id],
+            'student_ids' => [$student->id],
             'message_type' => 'fee_reminder_14',
             'send_sms' => '1',
             'send_email' => '0',
@@ -93,7 +95,7 @@ class ManualParentReminderTest extends TestCase
         ]);
     }
 
-    public function test_manual_send_rejects_more_than_five_parents(): void
+    public function test_manual_send_rejects_more_than_five_students(): void
     {
         $admin = User::factory()->create(['role' => 'school_admin']);
         $ids = [];
@@ -105,7 +107,7 @@ class ManualParentReminderTest extends TestCase
                 'phone' => '+2557000000'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
             ]);
 
-            $this->admitStudentForParent($parent, [
+            $student = $this->admitStudentForParent($parent, [
                 'admission_no' => 'ADM-BATCH-'.$i,
                 'name' => 'Batch Student '.$i,
                 'parent_email' => $parent->email,
@@ -113,26 +115,26 @@ class ManualParentReminderTest extends TestCase
                 'expected_total_fee' => 100000,
             ]);
 
-            $ids[] = $parent->id;
+            $ids[] = $student->id;
         }
 
         $this->actingAs($admin)
             ->from(route('notification-logs.send.create'))
             ->post(route('notification-logs.send.store'), [
-                'parent_user_ids' => $ids,
+                'student_ids' => $ids,
                 'message_type' => 'fee_reminder_14',
                 'send_sms' => '1',
                 'send_email' => '0',
             ])
             ->assertRedirect(route('notification-logs.send.create'))
-            ->assertSessionHasErrors(['parent_user_ids']);
+            ->assertSessionHasErrors(['student_ids']);
     }
 
     public function test_send_requires_at_least_one_channel(): void
     {
         $admin = User::factory()->create(['role' => 'school_admin']);
         $parent = User::factory()->create(['role' => 'parent', 'email' => 'parent2@example.com', 'phone' => '+255700000099']);
-        $this->admitStudentForParent($parent, [
+        $student = $this->admitStudentForParent($parent, [
             'admission_no' => 'ADM-201',
             'name' => 'Channel Test Student',
             'parent_email' => $parent->email,
@@ -142,7 +144,7 @@ class ManualParentReminderTest extends TestCase
         $response = $this->actingAs($admin)
             ->from(route('notification-logs.send.create'))
             ->post(route('notification-logs.send.store'), [
-                'parent_user_ids' => [$parent->id],
+                'student_ids' => [$student->id],
                 'message_type' => 'fee_reminder_14',
             ]);
 
@@ -219,7 +221,7 @@ class ManualParentReminderTest extends TestCase
         $this->app->instance(SmsService::class, $sms);
 
         $this->actingAs($admin)->post(route('notification-logs.send.store'), [
-            'parent_user_ids' => [$parent->id],
+            'student_ids' => [$student->id],
             'message_type' => 'auto',
             'send_sms' => '1',
             'send_email' => '0',
@@ -228,5 +230,31 @@ class ManualParentReminderTest extends TestCase
         $log = NotificationLog::query()->where('student_id', $student->id)->where('channel', 'sms')->first();
         $this->assertNotNull($log);
         $this->assertNotSame('', (string) $log->event_type);
+    }
+
+    public function test_unpaid_report_groups_students_by_class(): void
+    {
+        $admin = User::factory()->create(['role' => 'school_admin']);
+        $parent = User::factory()->create([
+            'role' => 'parent',
+            'email' => 'group.parent@example.com',
+            'phone' => '+255700000044',
+        ]);
+
+        $this->admitStudentForParent($parent, [
+            'admission_no' => 'ADM-GROUP',
+            'name' => 'Grouped Unpaid Student',
+            'class_name' => 'Form II',
+            'parent_email' => $parent->email,
+            'parent_phone' => $parent->phone,
+            'expected_total_fee' => 400000,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('reports.unpaid'))
+            ->assertOk()
+            ->assertSee('Form II')
+            ->assertSee('Grouped Unpaid Student')
+            ->assertSee('Students with Outstanding Fees');
     }
 }

@@ -27,16 +27,6 @@ class BatchParentReminderRequest extends FormRequest
             ? ['required', Rule::in($allowedTypes)]
             : ['nullable', Rule::in($allowedTypes)];
 
-        if ($isManualSend) {
-            return [
-                'parent_user_ids' => ['required', 'array', 'min:'.$min, 'max:'.$max],
-                'parent_user_ids.*' => ['integer', Rule::exists('users', 'id')->where('role', 'parent')],
-                'message_type' => $messageTypeRule,
-                'send_sms' => ['nullable', 'boolean'],
-                'send_email' => ['nullable', 'boolean'],
-            ];
-        }
-
         return [
             'student_ids' => ['required', 'array', 'min:'.$min, 'max:'.$max],
             'student_ids.*' => ['integer', Rule::exists('students', 'id')],
@@ -72,12 +62,9 @@ class BatchParentReminderRequest extends FormRequest
         $max = (int) config('notifications.max_batch_parents', 5);
 
         return [
-            'parent_user_ids.min' => "Select at least {$min} parent(s).",
-            'parent_user_ids.max' => "Select at most {$max} parent(s) per send.",
-            'parent_user_ids.required' => 'Select between '.$min.' and '.$max.' parents.',
-            'student_ids.min' => "Select at least {$min} parent(s).",
-            'student_ids.max' => "Select at most {$max} parent(s) per send.",
-            'student_ids.required' => 'Select between '.$min.' and '.$max.' parents.',
+            'student_ids.min' => "Select at least {$min} student(s).",
+            'student_ids.max' => "Select at most {$max} student(s) per send.",
+            'student_ids.required' => 'Select between '.$min.' and '.$max.' students.',
         ];
     }
 }

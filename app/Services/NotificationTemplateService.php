@@ -148,7 +148,7 @@ class NotificationTemplateService
             self::FEE_REMINDER_DUE => 'Fee reminder (due today)',
             self::FEE_REMINDER => 'Fee reminder (general)',
             self::OVERDUE => 'Overdue notice',
-            'auto' => 'Auto — match each parent\'s fee status',
+            'auto' => 'Auto — match each student’s fee status',
             default => ucfirst(str_replace('_', ' ', $eventType)),
         };
     }
